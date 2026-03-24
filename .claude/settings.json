@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "description": "Актуальная документация библиотек. ОБЯЗАТЕЛЬНО использовать перед написанием кода с новой библиотекой."
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server-supabase@latest"],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
+      },
+      "description": "Прямая работа с Supabase проектом: таблицы, миграции, Storage."
+    }
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(supabase:*)",
+      "Bash(git:*)",
+      "Bash(node:*)"
+    ]
+  }
+}

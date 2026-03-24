@@ -1,0 +1,44 @@
+import { NextResponse } from 'next/server'
+import { createServerClient } from '@/lib/supabase/server'
+import { z } from 'zod'
+
+const schema = z.object({
+  owner_type: z.enum(['player', 'npc', 'object']),
+  owner_id: z.string().uuid().optional(),
+  label: z.string().min(1),
+  image_url: z.string().optional(),
+  x: z.number().default(100),
+  y: z.number().default(100),
+  hp_max: z.number().int().optional(),
+  hp_current: z.number().int().optional(),
+})
+
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
+
+  const { data, error } = await supabase.from('map_tokens').select('*').eq('session_id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ tokens: data })
+}
+
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
+
+  const { data: session } = await supabase.from('sessions').select('master_id').eq('id', id).single()
+  if (!session) return NextResponse.json({ error: 'Не найдено' }, { status: 404 })
+  if (session.master_id !== user.id) return NextResponse.json({ error: 'Только мастер' }, { status: 403 })
+
+  const body = schema.safeParse(await req.json())
+  if (!body.success) return NextResponse.json({ error: 'Неверные данные' }, { status: 422 })
+
+  const insertData = { ...body.data, session_id: id, hp_current: body.data.hp_current ?? body.data.hp_max ?? null }
+  const { data, error } = await supabase.from('map_tokens').insert(insertData).select().single()
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ token: data }, { status: 201 })
+}
