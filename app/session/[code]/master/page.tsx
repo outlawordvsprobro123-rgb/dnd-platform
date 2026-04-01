@@ -29,16 +29,35 @@ export default async function MasterPage({ params }: { params: Promise<{ code: s
     supabase.from('map_tokens').select('*').eq('session_id', session.id),
     supabase.from('bestiary').select('id, name, size, type, cr, hp, ac, image_url').order('name'),
     supabase.from('characters').select('id, name, race, class, level, hp_current, hp_max, image_url').eq('user_id', user.id),
-    supabase.from('session_players').select('character_id').eq('session_id', session.id).not('character_id', 'is', null),
+    supabase.from('session_players').select('user_id, character_id').eq('session_id', session.id),
     supabase.from('loot_items').select('id, name, type, rarity, description, weight').order('name').limit(300),
     supabase.from('spells').select('id, name, level, school, classes').order('level').order('name').limit(400),
   ])
 
-  // Fetch characters for all session players
+  // Получаем персонажей всех игроков сессии через service role (RLS блокирует чужих персонажей)
+  const { createServiceClient } = await import('@/lib/supabase/service')
+  const service = createServiceClient()
+
+  const playerUserIds = (sessionPlayers ?? []).map(p => p.user_id).filter(Boolean) as string[]
   const characterIds = (sessionPlayers ?? []).map(p => p.character_id).filter(Boolean) as string[]
-  const { data: allSessionChars } = characterIds.length > 0
-    ? await supabase.from('characters').select('id, name, image_url').in('id', characterIds)
+
+  // Персонажи привязанные к игрокам сессии
+  const { data: charsByIds } = characterIds.length > 0
+    ? await service.from('characters').select('id, name, image_url, user_id').in('id', characterIds)
     : { data: [] }
+
+  // Все персонажи игроков (даже если не привязаны в session_players)
+  const { data: charsByUsers } = playerUserIds.length > 0
+    ? await service.from('characters').select('id, name, image_url, user_id').in('user_id', playerUserIds)
+    : { data: [] }
+
+  // Объединяем без дублей
+  const seen = new Set<string>()
+  const allSessionChars = [...(charsByIds ?? []), ...(charsByUsers ?? [])].filter(c => {
+    if (seen.has(c.id)) return false
+    seen.add(c.id)
+    return true
+  })
 
   return (
     <MasterPanelView
