@@ -19,6 +19,7 @@ export default function DashboardClient({ sessions, characters }: Props) {
   const [showJoin, setShowJoin] = useState(false)
   const [sessionName, setSessionName] = useState('')
   const [joinCode, setJoinCode] = useState('')
+  const [joinCharId, setJoinCharId] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -38,7 +39,9 @@ export default function DashboardClient({ sessions, characters }: Props) {
     if (!joinCode.trim()) return
     setLoading(true)
     try {
-      const res = await fetch('/api/sessions/join', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: joinCode.toUpperCase() }) })
+      const body: { code: string; character_id?: string } = { code: joinCode.toUpperCase() }
+      if (joinCharId) body.character_id = joinCharId
+      const res = await fetch('/api/sessions/join', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       router.push(`/session/${joinCode.toUpperCase()}`)
@@ -214,7 +217,7 @@ export default function DashboardClient({ sessions, characters }: Props) {
 
       {/* Модал присоединения */}
       {showJoin && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: 'rgba(0,0,0,.75)' }} onClick={() => { setShowJoin(false); setError('') }}>
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: 'rgba(0,0,0,.75)' }} onClick={() => { setShowJoin(false); setError(''); setJoinCharId('') }}>
           <div className="w-full max-w-md fade-up" style={{ background: 'linear-gradient(160deg, #1e1508, #130d04)', border: '1px solid #6b4f1e', borderRadius: '.75rem', padding: '2rem', boxShadow: '0 0 40px rgba(0,0,0,.8)' }} onClick={e => e.stopPropagation()}>
             <h3 style={{ fontFamily: "'Alegreya SC', serif", fontSize: '1rem', color: '#c9a84c', letterSpacing: '.08em', marginBottom: '1.25rem' }}>Присоединиться к сессии</h3>
             <input
@@ -226,9 +229,54 @@ export default function DashboardClient({ sessions, characters }: Props) {
               maxLength={7}
               onKeyDown={e => e.key === 'Enter' && joinSession()}
             />
+
+            {/* Выбор персонажа */}
+            <div style={{ marginBottom: '1rem' }}>
+              <p style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.65rem', letterSpacing: '.15em', color: '#8b6914', textTransform: 'uppercase', marginBottom: '.5rem' }}>
+                Персонаж
+              </p>
+              {characters.length === 0 ? (
+                <p style={{ color: '#7a5c38', fontSize: '.85rem', fontFamily: "'Mookmania', 'Alegreya SC', serif", fontStyle: 'italic' }}>
+                  Нет персонажей —{' '}
+                  <a href="/character/new" style={{ color: '#c9a84c', textDecoration: 'none' }}>создать</a>
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
+                  {characters.map(char => (
+                    <div
+                      key={char.id}
+                      onClick={() => setJoinCharId(joinCharId === char.id ? '' : char.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '.75rem',
+                        padding: '.6rem .9rem',
+                        border: `1px solid ${joinCharId === char.id ? '#c9a84c' : '#3d2a10'}`,
+                        borderRadius: '.5rem',
+                        background: joinCharId === char.id ? 'rgba(139,105,20,.12)' : 'rgba(255,255,255,.02)',
+                        cursor: 'pointer',
+                        transition: 'all .15s',
+                      }}
+                    >
+                      <div style={{
+                        width: '.85rem', height: '.85rem', borderRadius: '50%',
+                        border: `2px solid ${joinCharId === char.id ? '#c9a84c' : '#6b4f1e'}`,
+                        background: joinCharId === char.id ? '#c9a84c' : 'transparent',
+                        flexShrink: 0,
+                      }} />
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.8rem', color: '#f4e8cc' }}>{char.name}</p>
+                        <p style={{ fontFamily: "'Mookmania', 'Alegreya SC', serif", fontSize: '.7rem', color: '#7a5c38' }}>{char.race} · {char.class} · {char.level} ур.</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {error && <p style={{ color: '#e88070', fontSize: '.9rem', marginBottom: '.75rem' }}>{error}</p>}
             <div style={{ display: 'flex', gap: '.75rem' }}>
-              <button className="btn-fantasy btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setShowJoin(false); setError('') }}>Отмена</button>
+              <button className="btn-fantasy btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setShowJoin(false); setError(''); setJoinCharId('') }}>Отмена</button>
               <button className="btn-fantasy btn-gold" style={{ flex: 1, justifyContent: 'center' }} disabled={loading || joinCode.length < 7} onClick={joinSession}>
                 {loading ? '...' : 'Войти'}
               </button>
