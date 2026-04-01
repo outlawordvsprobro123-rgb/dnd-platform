@@ -1,39 +1,122 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Character, InventoryItem } from '@/lib/supabase/types'
-import { StatsBlock } from './StatsBlock'
+import Image from 'next/image'
+import type { Character, InventoryItem, CharacterSpell } from '@/lib/supabase/types'
 import { HpTracker } from './HpTracker'
 import { InventoryCatalog } from './InventoryCatalog'
 import { SKILLS, STAT_LABELS, getProficiencyBonus, getModifier, formatModifier } from '@/lib/utils/dnd'
+
+// ── Constants ────────────────────────────────────────────────────────────────
 
 const CLASSES_RU = ['Варвар', 'Бард', 'Жрец', 'Друид', 'Воин', 'Монах', 'Паладин', 'Следопыт', 'Плут', 'Чародей', 'Колдун', 'Волшебник', 'Изобретатель']
 const RACES_RU = ['Человек', 'Эльф', 'Дварф', 'Полурослик', 'Гном', 'Полуэльф', 'Полуорк', 'Тифлинг', 'Драконорождённый', 'Другое']
 const ALIGNMENTS = ['Законопослушный добрый', 'Нейтральный добрый', 'Хаотичный добрый', 'Законопослушный нейтральный', 'Истинно нейтральный', 'Хаотичный нейтральный', 'Законопослушный злой', 'Нейтральный злой', 'Хаотичный злой']
 
+const SPELL_LEVEL_LABEL = (l: number) => l === 0 ? 'Заговоры' : `${l} уровень`
+
+type Tab = 'main' | 'inventory' | 'magic' | 'notes'
+type InvCategory = 'weapon' | 'armor' | 'food' | 'misc'
+
+const INV_CATEGORIES: { id: InvCategory; label: string; icon: string }[] = [
+  { id: 'weapon', label: 'Оружие', icon: '⚔' },
+  { id: 'armor', label: 'Доспехи', icon: '🛡' },
+  { id: 'food', label: 'Еда и зелья', icon: '🧪' },
+  { id: 'misc', label: 'Разное', icon: '💼' },
+]
+
+const WEAPON_KW = ['меч', 'кинжал', 'топор', 'копьё', 'копье', 'лук', 'арбалет', 'посох', 'булава', 'молот', 'рапира', 'sword', 'dagger', 'axe', 'bow', 'staff', '+1', '+2', '+3', 'weapon', 'оружие', 'клинок', 'острие', 'нож']
+const ARMOR_KW = ['доспех', 'броня', 'кольчуга', 'щит', 'шлем', 'нагрудник', 'поножи', 'наручи', 'кираса', 'armor', 'shield', 'plate', 'chain', 'leather', 'перчатки', 'сапоги', 'плащ защит', 'кольцо защит', 'амулет здоровья', 'амулет защит']
+const FOOD_KW = ['еда', 'пища', 'хлеб', 'вода', 'зелье', 'эликсир', 'зел', 'пайка', 'паёк', 'food', 'ration', 'potion', 'elixir', 'ale', 'wine', 'мясо', 'рыба', 'суп', 'напиток']
+
+function detectCategory(name: string, desc?: string | null): InvCategory {
+  const s = (name + ' ' + (desc ?? '')).toLowerCase()
+  if (WEAPON_KW.some(k => s.includes(k))) return 'weapon'
+  if (ARMOR_KW.some(k => s.includes(k))) return 'armor'
+  if (FOOD_KW.some(k => s.includes(k))) return 'food'
+  return 'misc'
+}
+
+// ── Styles ───────────────────────────────────────────────────────────────────
+
+const S = {
+  card: {
+    background: 'linear-gradient(135deg, rgba(139,105,20,.06), rgba(0,0,0,.25))',
+    border: '1px solid var(--border)',
+    borderRadius: '.6rem',
+    padding: '1rem',
+  } as React.CSSProperties,
+  label: {
+    fontFamily: "'Alegreya SC', serif",
+    fontSize: '.55rem',
+    letterSpacing: '.2em',
+    color: 'var(--gold-dim)',
+    textTransform: 'uppercase' as const,
+    marginBottom: '.3rem',
+    display: 'block',
+  },
+  input: {
+    width: '100%',
+    background: 'rgba(0,0,0,.35)',
+    border: '1px solid var(--border)',
+    borderRadius: '.4rem',
+    padding: '.45rem .7rem',
+    color: 'var(--text-primary)',
+    fontFamily: "'Mookmania', 'Alegreya SC', serif",
+    fontSize: '.85rem',
+    outline: 'none',
+  } as React.CSSProperties,
+  select: {
+    width: '100%',
+    background: 'rgba(0,0,0,.35)',
+    border: '1px solid var(--border)',
+    borderRadius: '.4rem',
+    padding: '.45rem .7rem',
+    color: 'var(--text-primary)',
+    fontFamily: "'Mookmania', 'Alegreya SC', serif",
+    fontSize: '.85rem',
+    outline: 'none',
+  } as React.CSSProperties,
+  sectionTitle: {
+    fontFamily: "'Alegreya SC', serif",
+    fontSize: '.6rem',
+    letterSpacing: '.3em',
+    color: 'var(--gold-dim)',
+    textTransform: 'uppercase' as const,
+    marginBottom: '.75rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '.5rem',
+  },
+}
+
 interface Props {
   character: Character
   inventory: InventoryItem[]
+  spells: CharacterSpell[]
 }
 
-type Tab = 'main' | 'skills' | 'inventory' | 'features' | 'notes'
-
-export default function CharacterSheet({ character: initial, inventory: initialInventory }: Props) {
+export default function CharacterSheet({ character: initial, inventory: initialInventory, spells: initialSpells }: Props) {
   const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const [char, setChar] = useState(initial)
   const [inventory, setInventory] = useState(initialInventory)
+  const [spells, setSpells] = useState(initialSpells)
   const [activeTab, setActiveTab] = useState<Tab>('main')
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
   const [editMode, setEditMode] = useState(false)
   const [draft, setDraft] = useState(initial)
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null)
-
-  // Инвентарь — добавление
-  const [newItem, setNewItem] = useState({ name: '', quantity: 1, weight: 0, description: '' })
+  const [invCategory, setInvCategory] = useState<InvCategory>('weapon')
+  const [newItem, setNewItem] = useState({ name: '', quantity: 1, weight: 0, description: '', category: 'misc' as InvCategory })
   const [addingItem, setAddingItem] = useState(false)
+  const [avatarUploading, setAvatarUploading] = useState(false)
 
   const prof = getProficiencyBonus(char.level)
+
+  // ── Persisting ──────────────────────────────────────────────────────────────
 
   async function save() {
     setSaving(true)
@@ -47,19 +130,37 @@ export default function CharacterSheet({ character: initial, inventory: initialI
       setChar(draft)
       setEditMode(false)
       setSaveMsg('Сохранено')
-      setTimeout(() => setSaveMsg(''), 2000)
+      setTimeout(() => setSaveMsg(''), 2500)
     } catch {
-      setSaveMsg('Ошибка сохранения')
+      setSaveMsg('Ошибка')
     } finally {
       setSaving(false)
     }
   }
 
   async function deleteCharacter() {
-    if (!confirm('Удалить персонажа? Это действие нельзя отменить.')) return
+    if (!confirm('Удалить персонажа? Это нельзя отменить.')) return
     await fetch(`/api/characters/${char.id}`, { method: 'DELETE' })
     router.push('/dashboard')
   }
+
+  async function uploadAvatar(file: File) {
+    setAvatarUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch(`/api/characters/${char.id}/avatar`, { method: 'POST', body: formData })
+      const data = await res.json()
+      if (res.ok && data.avatar_url) {
+        setChar(c => ({ ...c, avatar_url: data.avatar_url }))
+        setDraft(d => ({ ...d, avatar_url: data.avatar_url }))
+      }
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
+
+  // ── Inventory ───────────────────────────────────────────────────────────────
 
   async function addInventoryItem() {
     if (!newItem.name.trim()) return
@@ -68,11 +169,11 @@ export default function CharacterSheet({ character: initial, inventory: initialI
       const res = await fetch(`/api/characters/${char.id}/inventory`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newItem),
+        body: JSON.stringify({ name: newItem.name, quantity: newItem.quantity, weight: newItem.weight, description: newItem.description }),
       })
       const data = await res.json()
       setInventory(prev => [...prev, data.item])
-      setNewItem({ name: '', quantity: 1, weight: 0, description: '' })
+      setNewItem({ name: '', quantity: 1, weight: 0, description: '', category: 'misc' })
     } finally {
       setAddingItem(false)
     }
@@ -85,12 +186,28 @@ export default function CharacterSheet({ character: initial, inventory: initialI
 
   async function toggleEquipped(item: InventoryItem) {
     await fetch(`/api/characters/${char.id}/inventory/${item.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ equipped: !item.equipped }),
     })
     setInventory(prev => prev.map(i => i.id === item.id ? { ...i, equipped: !i.equipped } : i))
   }
+
+  // ── Spells ──────────────────────────────────────────────────────────────────
+
+  async function togglePrepared(spell: CharacterSpell) {
+    await fetch(`/api/characters/${char.id}/spells/${spell.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prepared: !spell.prepared }),
+    })
+    setSpells(prev => prev.map(s => s.id === spell.id ? { ...s, prepared: !s.prepared } : s))
+  }
+
+  async function removeSpell(spellId: string) {
+    await fetch(`/api/characters/${char.id}/spells/${spellId}`, { method: 'DELETE' })
+    setSpells(prev => prev.filter(s => s.id !== spellId))
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
 
   const skillModifier = (skillId: string, statId: string) => {
     const base = getModifier(char.stats[statId as keyof typeof char.stats])
@@ -104,172 +221,306 @@ export default function CharacterSheet({ character: initial, inventory: initialI
     return base + (proficient ? prof : 0)
   }
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'main', label: 'Основное' },
-    { id: 'skills', label: 'Навыки' },
-    { id: 'inventory', label: 'Инвентарь' },
-    { id: 'features', label: 'Черты' },
-    { id: 'notes', label: 'Заметки' },
+  const groupedInventory = INV_CATEGORIES.reduce((acc, cat) => {
+    acc[cat.id] = inventory.filter(i => detectCategory(i.name, i.description) === cat.id)
+    return acc
+  }, {} as Record<InvCategory, InventoryItem[]>)
+
+  const groupedSpells = spells.reduce((acc, spell) => {
+    const lvl = spell.spell_level
+    if (!acc[lvl]) acc[lvl] = []
+    acc[lvl].push(spell)
+    return acc
+  }, {} as Record<number, CharacterSpell[]>)
+
+  const tabs: { id: Tab; label: string; icon: string }[] = [
+    { id: 'main', label: 'Основное', icon: '◈' },
+    { id: 'inventory', label: 'Инвентарь', icon: '⚔' },
+    { id: 'magic', label: 'Магия', icon: '✦' },
+    { id: 'notes', label: 'Заметки', icon: '📜' },
   ]
 
+  // ── Render ───────────────────────────────────────────────────────────────────
+
   return (
-    <div className="min-h-screen bg-gray-900">
-      {/* Шапка */}
-      <div className="bg-gray-800 border-b border-gray-700 p-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div>
-            <button onClick={() => router.push('/dashboard')} className="text-gray-500 hover:text-gray-300 text-sm mb-1 block">← Назад</button>
-            {editMode ? (
-              <input
-                value={draft.name}
-                onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
-                className="text-2xl font-bold bg-transparent border-b border-purple-500 text-white focus:outline-none"
-              />
-            ) : (
-              <h1 className="text-2xl font-bold text-white">{char.name}</h1>
-            )}
-            <p className="text-gray-400 text-sm">{char.race} · {char.class} {char.subclass ? `(${char.subclass})` : ''} · {char.level} уровень</p>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)' }}>
+
+      {/* ── ШАПКА ── */}
+      <div style={{
+        background: 'linear-gradient(180deg, #1a1209 0%, #120c04 100%)',
+        borderBottom: '1px solid var(--border-gold)',
+        padding: '1rem 1.5rem',
+        boxShadow: '0 2px 20px rgba(0,0,0,.5)',
+      }}>
+        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
+          <button onClick={() => router.push('/dashboard')} style={{
+            color: 'var(--text-muted)', fontFamily: "'Alegreya SC', serif", fontSize: '.75rem',
+            letterSpacing: '.05em', background: 'none', border: 'none', cursor: 'pointer', marginBottom: '.75rem',
+          }}>← Главная</button>
+
+          <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start' }}>
+            {/* Аватар */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  width: '96px', height: '96px', borderRadius: '.6rem',
+                  border: '2px solid var(--border-gold)',
+                  background: 'rgba(0,0,0,.4)',
+                  cursor: 'pointer',
+                  overflow: 'hidden',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  position: 'relative',
+                  boxShadow: '0 0 15px rgba(139,105,20,.2)',
+                }}
+              >
+                {char.avatar_url ? (
+                  <Image src={char.avatar_url} alt={char.name} fill style={{ objectFit: 'cover' }} unoptimized />
+                ) : (
+                  <span style={{ fontSize: '2.5rem', opacity: .4 }}>◈</span>
+                )}
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'rgba(0,0,0,.5)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  opacity: 0, transition: 'opacity .2s',
+                  fontFamily: "'Alegreya SC', serif", fontSize: '.6rem', color: '#fff', letterSpacing: '.1em',
+                }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '0'}
+                >
+                  {avatarUploading ? '...' : 'Изменить'}
+                </div>
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) uploadAvatar(f) }} />
+            </div>
+
+            {/* Имя и инфо */}
+            <div style={{ flex: 1 }}>
+              {editMode ? (
+                <input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
+                  style={{ ...S.input, fontSize: '1.6rem', fontFamily: "'Alegreya SC', serif", marginBottom: '.4rem', background: 'transparent', borderBottom: '1px solid var(--border-gold)', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderRadius: 0, padding: '0 0 .3rem' }} />
+              ) : (
+                <h1 style={{ fontFamily: "'Alegreya SC', serif", fontSize: '1.6rem', color: 'var(--gold)', letterSpacing: '.06em', marginBottom: '.3rem' }}>{char.name}</h1>
+              )}
+              <p style={{ fontFamily: "'Mookmania', 'Alegreya SC', serif", fontSize: '.9rem', color: 'var(--text-secondary)' }}>
+                {char.race} · {char.class}{char.subclass ? ` (${char.subclass})` : ''} · {char.level} уровень
+              </p>
+              {char.alignment && (
+                <p style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.65rem', color: 'var(--text-muted)', letterSpacing: '.1em', marginTop: '.25rem' }}>{char.alignment}</p>
+              )}
+            </div>
+
+            {/* Кнопки */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', flexShrink: 0 }}>
+              {saveMsg && <span style={{ color: saveMsg === 'Сохранено' ? '#6be07a' : '#e07070', fontSize: '.8rem', fontFamily: "'Alegreya SC', serif" }}>{saveMsg}</span>}
+              {editMode ? (
+                <>
+                  <button onClick={() => { setDraft(char); setEditMode(false) }}
+                    className="btn-fantasy btn-ghost" style={{ fontSize: '.65rem' }}>Отмена</button>
+                  <button onClick={save} disabled={saving}
+                    className="btn-fantasy btn-gold" style={{ fontSize: '.65rem' }}>
+                    {saving ? '...' : 'Сохранить'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setEditMode(true)}
+                    className="btn-fantasy btn-ghost" style={{ fontSize: '.65rem' }}>✎ Изменить</button>
+                  <button onClick={deleteCharacter}
+                    className="btn-fantasy" style={{ fontSize: '.65rem', borderColor: '#7a1a1a', color: '#e07070', background: 'rgba(120,20,20,.1)' }}>
+                    Удалить
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            {saveMsg && <span className="text-sm text-green-400">{saveMsg}</span>}
-            {editMode ? (
-              <>
-                <button onClick={() => { setDraft(char); setEditMode(false) }} className="text-gray-400 hover:text-gray-200 text-sm px-3 py-1.5 rounded-lg border border-gray-600">Отмена</button>
-                <button onClick={save} disabled={saving} className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm px-4 py-1.5 rounded-lg">
-                  {saving ? 'Сохранение...' : 'Сохранить'}
-                </button>
-              </>
-            ) : (
-              <>
-                <button onClick={() => setEditMode(true)} className="text-gray-400 hover:text-gray-200 text-sm px-3 py-1.5 rounded-lg border border-gray-600">Редактировать</button>
-                <button onClick={deleteCharacter} className="text-red-500 hover:text-red-400 text-sm px-3 py-1.5 rounded-lg border border-red-900">Удалить</button>
-              </>
-            )}
+
+          {/* Полоска HP */}
+          <div style={{ marginTop: '1rem' }}>
+            <HpTracker character={char} onUpdate={hp => setChar(c => ({ ...c, hp_current: hp }))} />
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-4">
-        {/* Быстрые характеристики */}
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-6">
+      {/* ── БЫСТРЫЕ СТАТЫ ── */}
+      <div style={{ background: 'rgba(0,0,0,.2)', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ maxWidth: '860px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', padding: '.6rem 1.5rem', gap: '.5rem' }}>
           {[
-            { label: 'Уровень', value: char.level, color: 'text-purple-400' },
-            { label: 'КД', value: char.armor_class, color: 'text-blue-400' },
-            { label: 'Инициатива', value: formatModifier(char.initiative ?? getModifier(char.stats.dex)), color: 'text-yellow-400' },
-            { label: 'Скорость', value: `${char.speed} фт`, color: 'text-green-400' },
-            { label: 'Бонус мастерства', value: formatModifier(prof), color: 'text-orange-400' },
-            { label: 'Кость хитов', value: char.hit_dice, color: 'text-red-400' },
-          ].map(item => (
-            <div key={item.label} className="bg-gray-800 border border-gray-700 rounded-xl p-3 text-center">
-              <p className="text-gray-500 text-xs mb-1">{item.label}</p>
-              <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
+            { label: 'Уровень', value: editMode ? null : char.level, field: 'level' as const, color: 'var(--gold)' },
+            { label: 'КД', value: editMode ? null : char.armor_class, field: 'armor_class' as const, color: '#70b8e0' },
+            { label: 'Инициатива', value: editMode ? null : formatModifier(char.initiative ?? getModifier(char.stats.dex)), field: null, color: '#e0c870' },
+            { label: 'Скорость', value: editMode ? null : `${char.speed} фт`, field: 'speed' as const, color: '#70e0a0' },
+            { label: 'Проф. бонус', value: editMode ? null : formatModifier(prof), field: null, color: '#c070e0' },
+            { label: 'Кость хитов', value: editMode ? null : char.hit_dice, field: null, color: '#e07070' },
+          ].map(stat => (
+            <div key={stat.label} style={{ textAlign: 'center', padding: '.5rem .25rem' }}>
+              <div style={S.label}>{stat.label}</div>
+              {editMode && stat.field ? (
+                <input
+                  type="number"
+                  value={draft[stat.field] as number}
+                  onChange={e => setDraft(d => ({ ...d, [stat.field!]: parseInt(e.target.value) || 0 }))}
+                  style={{ ...S.input, textAlign: 'center', fontSize: '.9rem', fontFamily: "'Alegreya SC', serif", color: stat.color, padding: '.2rem .3rem', width: '100%' }}
+                />
+              ) : (
+                <div style={{ fontFamily: "'Alegreya SC', serif", fontSize: '1.1rem', fontWeight: 700, color: stat.color }}>{stat.value}</div>
+              )}
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Хит-пойнты */}
-        <div className="mb-6">
-          <HpTracker character={char} onUpdate={hp => setChar(c => ({ ...c, hp_current: hp }))} />
-        </div>
+      {/* ── КОНТЕНТ ── */}
+      <div style={{ maxWidth: '860px', margin: '0 auto', padding: '0 1.5rem 2rem' }}>
 
         {/* Вкладки */}
-        <div className="flex gap-1 mb-6 border-b border-gray-700">
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: '1.5rem' }}>
           {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 text-sm rounded-t-lg transition-colors ${activeTab === tab.id ? 'text-white bg-gray-800 border-x border-t border-gray-700' : 'text-gray-400 hover:text-gray-200'}`}
-            >
-              {tab.label}
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+              padding: '.7rem 1.25rem',
+              fontFamily: "'Alegreya SC', serif",
+              fontSize: '.7rem',
+              letterSpacing: '.15em',
+              textTransform: 'uppercase',
+              background: activeTab === tab.id ? 'linear-gradient(180deg, rgba(139,105,20,.1), transparent)' : 'transparent',
+              border: 'none',
+              borderBottom: activeTab === tab.id ? '2px solid var(--gold)' : '2px solid transparent',
+              color: activeTab === tab.id ? 'var(--gold)' : 'var(--text-muted)',
+              cursor: 'pointer',
+              transition: 'all .15s',
+              display: 'flex', alignItems: 'center', gap: '.4rem',
+            }}>
+              <span>{tab.icon}</span> {tab.label}
             </button>
           ))}
         </div>
 
-        {/* ОСНОВНОЕ */}
+        {/* ══ ОСНОВНОЕ ══ */}
         {activeTab === 'main' && (
-          <div className="space-y-6">
-            {/* Описание персонажа */}
-            {editMode && (
-              <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-gray-400 text-xs block mb-1">Раса</label>
-                  <select value={draft.race} onChange={e => setDraft(d => ({ ...d, race: e.target.value }))}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500">
-                    {RACES_RU.map(r => <option key={r}>{r}</option>)}
-                    <option value={draft.race}>{draft.race}</option>
-                  </select>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+
+            {/* Левая колонка: характеристики */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+              {/* Редактирование деталей персонажа */}
+              {editMode && (
+                <div style={{ ...S.card }}>
+                  <div style={S.sectionTitle}>Детали персонажа</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.6rem' }}>
+                    {[
+                      { label: 'Раса', field: 'race' as const, options: RACES_RU },
+                      { label: 'Класс', field: 'class' as const, options: CLASSES_RU },
+                    ].map(({ label, field, options }) => (
+                      <div key={field}>
+                        <span style={S.label}>{label}</span>
+                        <select value={draft[field]} onChange={e => setDraft(d => ({ ...d, [field]: e.target.value }))} style={S.select}>
+                          {options.map(o => <option key={o}>{o}</option>)}
+                          {!options.includes(draft[field]) && <option value={draft[field]}>{draft[field]}</option>}
+                        </select>
+                      </div>
+                    ))}
+                    <div>
+                      <span style={S.label}>Подкласс</span>
+                      <input value={draft.subclass ?? ''} onChange={e => setDraft(d => ({ ...d, subclass: e.target.value || null }))} style={S.input} placeholder="—" />
+                    </div>
+                    <div>
+                      <span style={S.label}>Макс. HP</span>
+                      <input type="number" min={1} value={draft.hp_max} onChange={e => setDraft(d => ({ ...d, hp_max: parseInt(e.target.value) || 1 }))} style={S.input} />
+                    </div>
+                    <div>
+                      <span style={S.label}>Кость хитов</span>
+                      <input value={draft.hit_dice} onChange={e => setDraft(d => ({ ...d, hit_dice: e.target.value }))} style={S.input} placeholder="1d8" />
+                    </div>
+                    <div>
+                      <span style={S.label}>Предыстория</span>
+                      <input value={draft.background ?? ''} onChange={e => setDraft(d => ({ ...d, background: e.target.value }))} style={S.input} placeholder="Солдат..." />
+                    </div>
+                    <div style={{ gridColumn: '1/-1' }}>
+                      <span style={S.label}>Мировоззрение</span>
+                      <select value={draft.alignment ?? ''} onChange={e => setDraft(d => ({ ...d, alignment: e.target.value || null }))} style={S.select}>
+                        <option value="">—</option>
+                        {ALIGNMENTS.map(a => <option key={a}>{a}</option>)}
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-gray-400 text-xs block mb-1">Класс</label>
-                  <select value={draft.class} onChange={e => setDraft(d => ({ ...d, class: e.target.value }))}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500">
-                    {CLASSES_RU.map(c => <option key={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-gray-400 text-xs block mb-1">Уровень</label>
-                  <input type="number" min={1} max={20} value={draft.level}
-                    onChange={e => setDraft(d => ({ ...d, level: parseInt(e.target.value) || 1 }))}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500" />
-                </div>
-                <div>
-                  <label className="text-gray-400 text-xs block mb-1">КД</label>
-                  <input type="number" min={1} value={draft.armor_class}
-                    onChange={e => setDraft(d => ({ ...d, armor_class: parseInt(e.target.value) || 10 }))}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500" />
-                </div>
-                <div>
-                  <label className="text-gray-400 text-xs block mb-1">Скорость (фт)</label>
-                  <input type="number" min={0} step={5} value={draft.speed}
-                    onChange={e => setDraft(d => ({ ...d, speed: parseInt(e.target.value) || 30 }))}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500" />
-                </div>
-                <div>
-                  <label className="text-gray-400 text-xs block mb-1">Максимум HP</label>
-                  <input type="number" min={1} value={draft.hp_max}
-                    onChange={e => setDraft(d => ({ ...d, hp_max: parseInt(e.target.value) || 1 }))}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500" />
-                </div>
-                <div>
-                  <label className="text-gray-400 text-xs block mb-1">Мировоззрение</label>
-                  <select value={draft.alignment ?? ''} onChange={e => setDraft(d => ({ ...d, alignment: e.target.value }))}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500">
-                    <option value="">—</option>
-                    {ALIGNMENTS.map(a => <option key={a}>{a}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-gray-400 text-xs block mb-1">Предыстория</label>
-                  <input type="text" value={draft.background ?? ''}
-                    onChange={e => setDraft(d => ({ ...d, background: e.target.value }))}
-                    placeholder="Солдат, Преступник..."
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500" />
+              )}
+
+              {/* 6 характеристик */}
+              <div style={S.card}>
+                <div style={S.sectionTitle}>Характеристики</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '.6rem' }}>
+                  {(['str', 'dex', 'con', 'int', 'wis', 'cha'] as const).map(stat => {
+                    const val = editMode ? draft.stats[stat] : char.stats[stat]
+                    const mod = getModifier(val)
+                    return (
+                      <div key={stat} style={{
+                        textAlign: 'center',
+                        border: '1px solid var(--border)',
+                        borderRadius: '.5rem',
+                        padding: '.6rem .4rem',
+                        background: 'rgba(0,0,0,.2)',
+                      }}>
+                        <div style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.55rem', letterSpacing: '.2em', color: 'var(--gold-dim)', textTransform: 'uppercase', marginBottom: '.25rem' }}>
+                          {STAT_LABELS[stat]}
+                        </div>
+                        <div style={{ fontFamily: "'Alegreya SC', serif", fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
+                          {formatModifier(mod)}
+                        </div>
+                        {editMode ? (
+                          <input
+                            type="number" min={1} max={30} value={draft.stats[stat]}
+                            onChange={e => setDraft(d => ({ ...d, stats: { ...d.stats, [stat]: parseInt(e.target.value) || 10 } }))}
+                            style={{ ...S.input, textAlign: 'center', fontSize: '.75rem', padding: '.2rem', marginTop: '.3rem', width: '100%' }}
+                          />
+                        ) : (
+                          <div style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.75rem', color: 'var(--text-muted)', marginTop: '.2rem' }}>
+                            {val}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
-            )}
 
-            {/* Атрибуты */}
-            <div>
-              <h2 className="text-gray-400 text-xs uppercase tracking-wider mb-3">Основные характеристики</h2>
-              <StatsBlock
-                stats={editMode ? draft.stats : char.stats}
-                editable={editMode}
-                onChange={(stat, val) => setDraft(d => ({ ...d, stats: { ...d.stats, [stat]: val } }))}
-              />
+              {/* Спасброски */}
+              <div style={S.card}>
+                <div style={S.sectionTitle}>Спасброски</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.4rem' }}>
+                  {(['str', 'dex', 'con', 'int', 'wis', 'cha'] as const).map(stat => {
+                    const proficient = char.saving_throws?.[stat]
+                    const mod = savingThrowMod(stat)
+                    return (
+                      <div key={stat} style={{ display: 'flex', alignItems: 'center', gap: '.5rem', padding: '.4rem .6rem', borderRadius: '.35rem', background: 'rgba(0,0,0,.2)', border: '1px solid var(--border)' }}>
+                        <div style={{ width: '.65rem', height: '.65rem', borderRadius: '50%', border: `1.5px solid ${proficient ? 'var(--gold)' : 'var(--border)'}`, background: proficient ? 'var(--gold)' : 'transparent', flexShrink: 0 }} />
+                        <span style={{ fontFamily: "'Mookmania', 'Alegreya SC', serif", fontSize: '.8rem', color: 'var(--text-secondary)', flex: 1 }}>{STAT_LABELS[stat]}</span>
+                        <span style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.8rem', fontWeight: 700, color: mod >= 0 ? '#6be07a' : '#e07070' }}>{formatModifier(mod)}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
 
-            {/* Спасброски */}
-            <div>
-              <h2 className="text-gray-400 text-xs uppercase tracking-wider mb-3">Спасброски</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {(['str','dex','con','int','wis','cha'] as const).map(stat => {
-                  const proficient = char.saving_throws?.[stat]
-                  const mod = savingThrowMod(stat)
+            {/* Правая колонка: навыки */}
+            <div style={S.card}>
+              <div style={{ ...S.sectionTitle, justifyContent: 'space-between' }}>
+                <span>Навыки</span>
+                <span style={{ fontSize: '.55rem', color: 'var(--text-muted)' }}>Проф. {formatModifier(prof)}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.3rem' }}>
+                {SKILLS.map(skill => {
+                  const proficient = char.skills?.[skill.id]
+                  const mod = skillModifier(skill.id, skill.stat)
                   return (
-                    <div key={stat} className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
-                      <div className={`w-3 h-3 rounded-full border flex-shrink-0 ${proficient ? 'bg-purple-500 border-purple-500' : 'border-gray-500'}`} />
-                      <span className="text-gray-300 text-sm flex-1">{STAT_LABELS[stat]}</span>
-                      <span className={`font-semibold text-sm ${mod >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatModifier(mod)}</span>
+                    <div key={skill.id} style={{ display: 'flex', alignItems: 'center', gap: '.5rem', padding: '.35rem .5rem', borderRadius: '.3rem', background: proficient ? 'rgba(139,105,20,.07)' : 'transparent' }}>
+                      <div style={{ width: '.6rem', height: '.6rem', borderRadius: '50%', border: `1.5px solid ${proficient ? 'var(--gold)' : 'var(--border)'}`, background: proficient ? 'var(--gold)' : 'transparent', flexShrink: 0 }} />
+                      <span style={{ fontFamily: "'Mookmania', 'Alegreya SC', serif", fontSize: '.8rem', color: 'var(--text-secondary)', flex: 1 }}>{skill.ru}</span>
+                      <span style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.6rem', color: 'var(--text-muted)' }}>{STAT_LABELS[skill.stat]}</span>
+                      <span style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.8rem', fontWeight: 700, color: mod >= 0 ? '#6be07a' : '#e07070', minWidth: '2rem', textAlign: 'right' }}>{formatModifier(mod)}</span>
                     </div>
                   )
                 })}
@@ -278,110 +529,105 @@ export default function CharacterSheet({ character: initial, inventory: initialI
           </div>
         )}
 
-        {/* НАВЫКИ */}
-        {activeTab === 'skills' && (
-          <div>
-            <p className="text-gray-500 text-xs mb-3">Бонус мастерства: {formatModifier(prof)} · Закрашенный кружок — владение</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {SKILLS.map(skill => {
-                const proficient = char.skills?.[skill.id]
-                const mod = skillModifier(skill.id, skill.stat)
-                return (
-                  <div key={skill.id} className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
-                    <div className={`w-3 h-3 rounded-full border flex-shrink-0 ${proficient ? 'bg-purple-500 border-purple-500' : 'border-gray-500'}`} />
-                    <span className="text-gray-300 text-sm flex-1">{skill.ru}</span>
-                    <span className="text-gray-500 text-xs">{STAT_LABELS[skill.stat]}</span>
-                    <span className={`font-semibold text-sm ${mod >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatModifier(mod)}</span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ИНВЕНТАРЬ */}
+        {/* ══ ИНВЕНТАРЬ ══ */}
         {activeTab === 'inventory' && (
           <div>
             {/* Каталог */}
             <InventoryCatalog
               characterId={char.id}
               onAdded={async (item) => {
-                setAddingItem(true)
-                try {
-                  const res = await fetch(`/api/characters/${char.id}/inventory`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: item.name, quantity: 1, weight: item.weight, description: item.description, item_id: item.item_id }),
-                  })
-                  const data = await res.json()
-                  setInventory(prev => [...prev, data.item])
-                } finally {
-                  setAddingItem(false)
-                }
+                const res = await fetch(`/api/characters/${char.id}/inventory`, {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name: item.name, quantity: 1, weight: item.weight, description: item.description, item_id: item.item_id }),
+                })
+                const data = await res.json()
+                setInventory(prev => [...prev, data.item])
               }}
             />
 
-            {/* Добавить предмет вручную */}
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 mb-4">
-              <h3 className="text-gray-300 text-sm font-medium mb-3">Добавить вручную</h3>
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                <input
-                  type="text"
-                  placeholder="Название *"
-                  value={newItem.name}
+            {/* Подразделы */}
+            <div style={{ display: 'flex', gap: '.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+              {INV_CATEGORIES.map(cat => (
+                <button key={cat.id} onClick={() => setInvCategory(cat.id)} style={{
+                  display: 'flex', alignItems: 'center', gap: '.4rem',
+                  padding: '.4rem .9rem',
+                  fontFamily: "'Alegreya SC', serif", fontSize: '.65rem', letterSpacing: '.1em',
+                  border: `1px solid ${invCategory === cat.id ? 'var(--border-gold)' : 'var(--border)'}`,
+                  borderRadius: '.4rem',
+                  background: invCategory === cat.id ? 'rgba(139,105,20,.12)' : 'transparent',
+                  color: invCategory === cat.id ? 'var(--gold)' : 'var(--text-muted)',
+                  cursor: 'pointer',
+                }}>
+                  {cat.icon} {cat.label}
+                  <span style={{ background: 'rgba(0,0,0,.3)', borderRadius: '999px', padding: '0 .4rem', fontSize: '.55rem' }}>
+                    {groupedInventory[cat.id].length}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Добавить вручную */}
+            <div style={{ ...S.card, marginBottom: '1rem' }}>
+              <div style={S.sectionTitle}>Добавить предмет</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '.5rem', marginBottom: '.5rem' }}>
+                <input type="text" placeholder="Название *" value={newItem.name}
                   onChange={e => setNewItem(n => ({ ...n, name: e.target.value }))}
-                  className="col-span-2 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
-                />
-                <input
-                  type="number"
-                  placeholder="Кол-во"
-                  min={1}
-                  value={newItem.quantity}
+                  style={S.input} />
+                <input type="number" placeholder="Кол." min={1} value={newItem.quantity}
                   onChange={e => setNewItem(n => ({ ...n, quantity: parseInt(e.target.value) || 1 }))}
-                  className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm text-center focus:outline-none focus:border-purple-500"
-                />
+                  style={{ ...S.input, width: '4.5rem', textAlign: 'center' }} />
+                <input type="number" placeholder="Вес" min={0} step={0.1} value={newItem.weight}
+                  onChange={e => setNewItem(n => ({ ...n, weight: parseFloat(e.target.value) || 0 }))}
+                  style={{ ...S.input, width: '4.5rem', textAlign: 'center' }} />
               </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Описание"
-                  value={newItem.description}
+              <div style={{ display: 'flex', gap: '.5rem' }}>
+                <input type="text" placeholder="Описание" value={newItem.description}
                   onChange={e => setNewItem(n => ({ ...n, description: e.target.value }))}
-                  className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
-                />
-                <button
-                  onClick={addInventoryItem}
-                  disabled={addingItem || !newItem.name.trim()}
-                  className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm"
-                >
+                  style={{ ...S.input, flex: 1 }} />
+                <button onClick={addInventoryItem} disabled={addingItem || !newItem.name.trim()}
+                  className="btn-fantasy btn-gold" style={{ fontSize: '.65rem', flexShrink: 0 }}>
                   + Добавить
                 </button>
               </div>
             </div>
 
-            {/* Список предметов */}
-            {inventory.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">Инвентарь пуст</div>
+            {/* Список по категории */}
+            {groupedInventory[invCategory].length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)', fontFamily: "'Mookmania', 'Alegreya SC', serif", fontStyle: 'italic' }}>
+                {INV_CATEGORIES.find(c => c.id === invCategory)?.icon} Нет предметов в этой категории
+              </div>
             ) : (
-              <div className="space-y-2">
-                {inventory.map(item => {
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+                {groupedInventory[invCategory].map(item => {
                   const isExpanded = expandedItemId === item.id
                   return (
-                    <div key={item.id} className={`bg-gray-800 border rounded-xl ${item.equipped ? 'border-purple-700' : 'border-gray-700'}`}>
-                      <div className="flex items-center gap-3 px-4 py-3 cursor-pointer" onClick={() => setExpandedItemId(isExpanded ? null : item.id)}>
-                        <button onClick={e => { e.stopPropagation(); toggleEquipped(item) }} title={item.equipped ? 'Снять' : 'Надеть'}>
-                          <div className={`w-4 h-4 rounded border ${item.equipped ? 'bg-purple-500 border-purple-500' : 'border-gray-500'}`} />
+                    <div key={item.id} style={{
+                      ...S.card, padding: 0,
+                      borderColor: item.equipped ? 'var(--border-gold)' : 'var(--border)',
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', padding: '.75rem 1rem', cursor: 'pointer' }}
+                        onClick={() => setExpandedItemId(isExpanded ? null : item.id)}>
+                        <button onClick={e => { e.stopPropagation(); toggleEquipped(item) }}
+                          title={item.equipped ? 'Снять' : 'Надеть'}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}>
+                          <div style={{ width: '1rem', height: '1rem', borderRadius: '.2rem', border: `1.5px solid ${item.equipped ? 'var(--gold)' : 'var(--border)'}`, background: item.equipped ? 'rgba(139,105,20,.4)' : 'transparent' }} />
                         </button>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white text-sm font-medium">{item.name}</p>
-                          {item.description && !isExpanded && <p className="text-gray-400 text-xs truncate">{item.description}</p>}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.9rem', color: item.equipped ? 'var(--gold)' : 'var(--text-primary)' }}>{item.name}</p>
+                          {item.description && !isExpanded && (
+                            <p style={{ fontFamily: "'Mookmania', 'Alegreya SC', serif", fontSize: '.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description}</p>
+                          )}
                         </div>
-                        <span className="text-gray-400 text-sm flex-shrink-0">× {item.quantity}</span>
-                        {item.description && <span className="text-gray-600 text-xs flex-shrink-0">{isExpanded ? '▲' : '▼'}</span>}
-                        <button onClick={e => { e.stopPropagation(); removeInventoryItem(item.id) }} className="text-gray-600 hover:text-red-400 text-sm transition-colors flex-shrink-0">✕</button>
+                        <span style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.8rem', color: 'var(--text-muted)', flexShrink: 0 }}>×{item.quantity}</span>
+                        {item.description && <span style={{ color: 'var(--border)', fontSize: '.7rem', flexShrink: 0 }}>{isExpanded ? '▲' : '▼'}</span>}
+                        <button onClick={e => { e.stopPropagation(); removeInventoryItem(item.id) }}
+                          style={{ background: 'none', border: 'none', color: 'var(--border)', fontSize: '.9rem', cursor: 'pointer', flexShrink: 0, transition: 'color .15s' }}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#e07070'}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--border)'}>✕</button>
                       </div>
                       {isExpanded && item.description && (
-                        <div className="px-4 pb-3 text-xs text-gray-300 leading-relaxed border-t border-gray-700 pt-2">
+                        <div style={{ borderTop: '1px solid var(--border)', padding: '.75rem 1rem', fontFamily: "'Mookmania', 'Alegreya SC', serif", fontSize: '.8rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
                           {item.description}
                         </div>
                       )}
@@ -393,17 +639,49 @@ export default function CharacterSheet({ character: initial, inventory: initialI
           </div>
         )}
 
-        {/* ЧЕРТЫ */}
-        {activeTab === 'features' && (
+        {/* ══ МАГИЯ ══ */}
+        {activeTab === 'magic' && (
           <div>
-            {char.features?.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">Нет черт класса</div>
+            {spells.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontFamily: "'Mookmania', 'Alegreya SC', serif", fontStyle: 'italic' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '.75rem', opacity: .3 }}>✦</div>
+                Нет заклинаний. Мастер может выдать их через панель управления.
+              </div>
             ) : (
-              <div className="space-y-3">
-                {char.features?.map((f, i) => (
-                  <div key={i} className="bg-gray-800 border border-gray-700 rounded-xl p-4">
-                    <h3 className="font-medium text-white mb-1">{f.name}</h3>
-                    <p className="text-gray-300 text-sm leading-relaxed">{f.description}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                {Object.keys(groupedSpells).map(Number).sort((a, b) => a - b).map(level => (
+                  <div key={level}>
+                    <div style={{ ...S.sectionTitle, marginBottom: '.6rem' }}>
+                      <span style={{ fontSize: '.8rem' }}>✦</span>
+                      {SPELL_LEVEL_LABEL(level)}
+                      <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, var(--border), transparent)' }} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
+                      {groupedSpells[level].map(spell => (
+                        <div key={spell.id} style={{
+                          ...S.card, padding: '.7rem 1rem',
+                          display: 'flex', alignItems: 'center', gap: '.75rem',
+                          borderColor: spell.prepared ? 'rgba(139,105,20,.4)' : 'var(--border)',
+                          background: spell.prepared ? 'rgba(139,105,20,.07)' : 'rgba(0,0,0,.15)',
+                        }}>
+                          <button onClick={() => togglePrepared(spell)} title={spell.prepared ? 'Снять подготовку' : 'Подготовить'}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}>
+                            <div style={{ width: '1rem', height: '1rem', borderRadius: '50%', border: `1.5px solid ${spell.prepared ? 'var(--gold)' : 'var(--border)'}`, background: spell.prepared ? 'rgba(139,105,20,.5)' : 'transparent', transition: 'all .15s' }} />
+                          </button>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.9rem', color: spell.prepared ? 'var(--gold)' : 'var(--text-primary)' }}>{spell.name}</p>
+                            {spell.notes && <p style={{ fontFamily: "'Mookmania', 'Alegreya SC', serif", fontSize: '.75rem', color: 'var(--text-muted)' }}>{spell.notes}</p>}
+                          </div>
+                          <span style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.6rem', color: 'var(--text-muted)', letterSpacing: '.1em' }}>
+                            {level === 0 ? 'Заговор' : `${level} ур.`}
+                          </span>
+                          <button onClick={() => removeSpell(spell.id)}
+                            style={{ background: 'none', border: 'none', color: 'var(--border)', fontSize: '.9rem', cursor: 'pointer', flexShrink: 0, transition: 'color .15s' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#e07070'}
+                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--border)'}>✕</button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -411,16 +689,23 @@ export default function CharacterSheet({ character: initial, inventory: initialI
           </div>
         )}
 
-        {/* ЗАМЕТКИ */}
+        {/* ══ ЗАМЕТКИ ══ */}
         {activeTab === 'notes' && (
           <div>
             <textarea
               value={editMode ? (draft.notes ?? '') : (char.notes ?? '')}
               onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))}
               readOnly={!editMode}
-              placeholder={editMode ? 'Заметки о персонаже...' : 'Нет заметок. Нажмите «Редактировать» для добавления.'}
-              rows={15}
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-gray-200 text-sm leading-relaxed focus:outline-none focus:border-purple-500 resize-none read-only:cursor-default"
+              placeholder={editMode ? 'Заметки о персонаже...' : 'Нет заметок. Нажмите «Изменить» для добавления.'}
+              rows={18}
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                ...S.input,
+                resize: 'none',
+                lineHeight: 1.7,
+                fontSize: '.9rem',
+                opacity: editMode ? 1 : .8,
+              }}
             />
           </div>
         )}

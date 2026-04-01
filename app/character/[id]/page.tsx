@@ -12,12 +12,13 @@ export default async function CharacterPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: character }, { data: inventory }] = await Promise.all([
+  const [{ data: character }, { data: inventory }, { data: spells }] = await Promise.all([
     supabase.from('characters').select('*').eq('id', id).eq('user_id', user.id).single(),
     supabase.from('character_inventory').select('*').eq('character_id', id).order('created_at'),
+    supabase.from('character_spells').select('*').eq('character_id', id).order('spell_level').order('name'),
   ])
 
   if (!character) notFound()
 
-  return <CharacterSheet character={character} inventory={inventory ?? []} />
+  return <CharacterSheet character={character} inventory={inventory ?? []} spells={spells ?? []} />
 }
