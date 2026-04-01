@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -22,9 +23,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (session.master_id !== user.id) return NextResponse.json({ error: 'Только мастер' }, { status: 403 })
 
   const body = schema.safeParse(await req.json())
-  if (!body.success) return NextResponse.json({ error: 'Неверные данные' }, { status: 422 })
+  if (!body.success) return NextResponse.json({ error: 'Неверные данные', details: body.error.issues }, { status: 422 })
 
-  const { data, error } = await supabase
+  const service = createServiceClient()
+  const { data, error } = await service
     .from('character_inventory')
     .insert({
       character_id: body.data.character_id,

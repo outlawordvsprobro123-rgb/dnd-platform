@@ -178,8 +178,10 @@ export function LootGenerator({ sessionId, isMaster }: Props) {
         body: JSON.stringify({
           character_id: characterId,
           item_id: item.id,
-          item_name: item.name,
+          name: item.name,
+          description: item.description ?? '',
           quantity: 1,
+          weight: item.weight ?? 0,
         }),
       })
 
