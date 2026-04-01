@@ -19,6 +19,7 @@ import { RandomTables } from '@/components/session/RandomTables'
 import { EncounterBuilder } from '@/components/session/EncounterBuilder'
 import { LootGenerator } from '@/components/session/LootGenerator'
 import { getModifier, formatModifier } from '@/lib/utils/dnd'
+import PlayerMobileView from './PlayerMobileView'
 
 const MapCanvas = dynamic(() => import('@/components/battlemap/MapCanvas').then(m => ({ default: m.MapCanvas })), { ssr: false })
 
@@ -67,6 +68,14 @@ export default function SessionView({
   const { setScenes } = useMusicStore()
   const { worldState, setWorldState } = useWorldStore()
   const [rightTab, setRightTab] = useState<RightTab>('music')
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   useEffect(() => {
     setSession(session)
@@ -90,6 +99,10 @@ export default function SessionView({
   const { broadcastTokenMove, broadcastPing, send } = useMapChannel(session.id)
   useCombatChannel(session.id)
   useMusicChannel(session.id)
+
+  if (isMobile && !isMaster) {
+    return <PlayerMobileView session={session} characters={characters} />
+  }
 
   return (
     <div style={{ height: '100vh', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
