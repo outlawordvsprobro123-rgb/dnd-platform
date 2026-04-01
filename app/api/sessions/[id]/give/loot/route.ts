@@ -5,11 +5,11 @@ import { z } from 'zod'
 
 const schema = z.object({
   character_id: z.string().uuid(),
-  item_id: z.string().uuid().optional(),
+  item_id: z.string().uuid().nullish(),
   name: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string().nullish(),
   quantity: z.number().int().min(1).default(1),
-  weight: z.number().default(0),
+  weight: z.coerce.number().default(0),
 })
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
