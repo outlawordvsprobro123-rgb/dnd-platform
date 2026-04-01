@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMapStore } from '@/lib/stores/mapStore'
 import { useWorldStore } from '@/lib/stores/worldStore'
 import { createClient } from '@/lib/supabase/client'
@@ -80,6 +80,23 @@ export function MapMasterPanel({
   const [targetCharId, setTargetCharId] = useState<string>('')
   const [giving, setGiving] = useState(false)
   const [giveResult, setGiveResult] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [liveChars, setLiveChars] = useState<SessionCharacter[]>(sessionCharacters)
+  const [charsLoading, setCharsLoading] = useState(false)
+
+  async function reloadChars() {
+    setCharsLoading(true)
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/players`)
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) setLiveChars(data)
+      }
+    } finally {
+      setCharsLoading(false)
+    }
+  }
+
+  useEffect(() => { reloadChars() }, [])
 
   const supabase = createClient()
 
@@ -267,7 +284,7 @@ export function MapMasterPanel({
       })
       const json = await res.json()
       if (res.ok) {
-        const char = sessionCharacters.find(c => c.id === targetCharId)
+        const char = liveChars.find(c => c.id === targetCharId)
         setGiveResult({ ok: true, msg: `${item.name} → ${char?.name ?? 'персонаж'}` })
       } else {
         setGiveResult({ ok: false, msg: json.error ?? 'Ошибка' })
@@ -291,7 +308,7 @@ export function MapMasterPanel({
       })
       const json = await res.json()
       if (res.ok) {
-        const char = sessionCharacters.find(c => c.id === targetCharId)
+        const char = liveChars.find(c => c.id === targetCharId)
         setGiveResult({ ok: true, msg: `${spell.name} → ${char?.name ?? 'персонаж'}` })
       } else {
         setGiveResult({ ok: false, msg: json.error ?? 'Ошибка' })
@@ -521,14 +538,21 @@ export function MapMasterPanel({
           <>
             {/* Target character */}
             <div className="space-y-1.5">
-              <label className="text-xs text-gray-400 font-medium">Получатель</label>
-              {sessionCharacters.length === 0 ? (
-                <p className="text-xs text-gray-500 py-2 text-center">Нет персонажей в сессии</p>
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-gray-400 font-medium">Получатель</label>
+                <button onClick={reloadChars} disabled={charsLoading} className="text-xs text-gray-500 hover:text-gray-300 transition-colors" title="Обновить список">
+                  {charsLoading ? '...' : '↻ Обновить'}
+                </button>
+              </div>
+              {liveChars.length === 0 ? (
+                <p className="text-xs text-gray-500 py-2 text-center">
+                  {charsLoading ? 'Загрузка...' : 'Нет персонажей в сессии'}
+                </p>
               ) : (
                 <select value={targetCharId} onChange={e => setTargetCharId(e.target.value)}
                   className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500">
                   <option value="">— выбрать персонажа —</option>
-                  {sessionCharacters.map(c => (
+                  {liveChars.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
