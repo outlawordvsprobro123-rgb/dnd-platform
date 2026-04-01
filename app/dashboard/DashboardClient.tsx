@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Session, Character } from '@/lib/supabase/types'
-import { STAT_LABELS, getModifier, formatModifier } from '@/lib/utils/dnd'
+import { getModifier, formatModifier } from '@/lib/utils/dnd'
 
 interface Props {
   sessions: Session[]
@@ -10,9 +10,12 @@ interface Props {
   userId: string
 }
 
-export default function DashboardClient({ sessions, characters, userId }: Props) {
+const STATUS_LABEL: Record<string, string> = { waiting: 'Ожидание', active: 'Активна', paused: 'Пауза', ended: 'Завершена' }
+const STATUS_COLOR: Record<string, string> = { waiting: '#c9a84c', active: '#4ade80', paused: '#60a5fa', ended: '#7a5c38' }
+
+export default function DashboardClient({ sessions, characters }: Props) {
   const router = useRouter()
-  const [showCreateSession, setShowCreateSession] = useState(false)
+  const [showCreate, setShowCreate] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
   const [sessionName, setSessionName] = useState('')
   const [joinCode, setJoinCode] = useState('')
@@ -27,9 +30,8 @@ export default function DashboardClient({ sessions, characters, userId }: Props)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       router.push(`/session/${data.session.code}`)
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Ошибка')
-    } finally { setLoading(false) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Ошибка') }
+    finally { setLoading(false) }
   }
 
   async function joinSession() {
@@ -40,113 +42,200 @@ export default function DashboardClient({ sessions, characters, userId }: Props)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       router.push(`/session/${joinCode.toUpperCase()}`)
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Ошибка')
-    } finally { setLoading(false) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Ошибка') }
+    finally { setLoading(false) }
   }
 
-  const statusLabel = (s: Session['status']) => ({ waiting: 'Ожидание', active: 'Активна', paused: 'Пауза', ended: 'Завершена' })[s]
-  const statusColor = (s: Session['status']) => ({ waiting: 'text-yellow-400', active: 'text-green-400', paused: 'text-blue-400', ended: 'text-gray-500' })[s]
-
   return (
-    <div className="min-h-screen bg-gray-900 p-6">
-      <div className="max-w-6xl mx-auto">
-        <header className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold text-purple-400">⚔️ DnD Companion</h1>
-          <div className="flex gap-3">
-            <button onClick={() => setShowJoin(true)} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">Присоединиться</button>
-            <button onClick={() => setShowCreateSession(true)} className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">+ Новая кампания</button>
-          </div>
-        </header>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Сессии */}
-          <section>
-            <h2 className="text-lg font-semibold text-gray-200 mb-4">Мои кампании</h2>
-            {sessions.length === 0 ? (
-              <div className="bg-gray-800 rounded-xl p-8 text-center border border-gray-700">
-                <p className="text-gray-500">Нет кампаний</p>
-                <button onClick={() => setShowCreateSession(true)} className="mt-3 text-purple-400 hover:text-purple-300 text-sm">+ Создать первую</button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {sessions.map(session => (
-                  <div key={session.id} onClick={() => router.push(`/session/${session.code}`)} className="bg-gray-800 hover:bg-gray-750 border border-gray-700 rounded-xl p-4 cursor-pointer transition-colors hover:border-purple-700">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-white">{session.name}</h3>
-                        <p className="text-gray-500 text-sm mt-1">Код: <span className="text-purple-400 font-mono">{session.code}</span></p>
-                      </div>
-                      <span className={`text-xs font-medium ${statusColor(session.status)}`}>{statusLabel(session.status)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Персонажи */}
-          <section>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-200">Персонажи</h2>
-              <button onClick={() => router.push('/character/new')} className="text-purple-400 hover:text-purple-300 text-sm">+ Создать</button>
-            </div>
-            {characters.length === 0 ? (
-              <div className="bg-gray-800 rounded-xl p-8 text-center border border-gray-700">
-                <p className="text-gray-500">Нет персонажей</p>
-                <button onClick={() => router.push('/character/new')} className="mt-3 text-purple-400 hover:text-purple-300 text-sm">+ Создать первого</button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {characters.map(char => (
-                  <div key={char.id} onClick={() => router.push(`/character/${char.id}`)} className="bg-gray-800 hover:bg-gray-750 border border-gray-700 rounded-xl p-4 cursor-pointer transition-colors hover:border-purple-700">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-white">{char.name}</h3>
-                        <p className="text-gray-400 text-sm">{char.race} · {char.class} · {char.level} ур.</p>
-                      </div>
-                      <div className="text-right text-sm">
-                        <p className="text-red-400">{char.hp_current}/{char.hp_max} HP</p>
-                        <p className="text-gray-500">КД {char.armor_class}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-
-        {/* Модал создания сессии */}
-        {showCreateSession && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-700">
-              <h3 className="text-lg font-semibold mb-4">Новая кампания</h3>
-              <input value={sessionName} onChange={e => setSessionName(e.target.value)} placeholder="Название кампании" className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white mb-4 focus:outline-none focus:border-purple-500" onKeyDown={e => e.key === 'Enter' && createSession()} />
-              {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
-              <div className="flex gap-3">
-                <button onClick={() => { setShowCreateSession(false); setError('') }} className="flex-1 bg-gray-700 text-white py-2 rounded-lg">Отмена</button>
-                <button onClick={createSession} disabled={loading || !sessionName.trim()} className="flex-1 bg-purple-600 disabled:opacity-50 text-white py-2 rounded-lg">{loading ? 'Создание...' : 'Создать'}</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Модал присоединения */}
-        {showJoin && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-700">
-              <h3 className="text-lg font-semibold mb-4">Присоединиться к сессии</h3>
-              <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())} placeholder="Код сессии (ABC-123)" className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono tracking-widest text-center mb-4 focus:outline-none focus:border-purple-500" maxLength={7} onKeyDown={e => e.key === 'Enter' && joinSession()} />
-              {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
-              <div className="flex gap-3">
-                <button onClick={() => { setShowJoin(false); setError('') }} className="flex-1 bg-gray-700 text-white py-2 rounded-lg">Отмена</button>
-                <button onClick={joinSession} disabled={loading || joinCode.length < 7} className="flex-1 bg-purple-600 disabled:opacity-50 text-white py-2 rounded-lg">{loading ? 'Поиск...' : 'Войти'}</button>
-              </div>
-            </div>
-          </div>
-        )}
+    <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
+      {/* Герой-баннер */}
+      <div style={{
+        background: 'linear-gradient(180deg, rgba(139,21,0,.12) 0%, transparent 100%)',
+        borderBottom: '1px solid #3d2a10',
+        padding: '2rem 2rem 1.5rem',
+        textAlign: 'center',
+      }}>
+        <div style={{ color: '#6b4f1e', fontSize: '1rem', letterSpacing: '.4em', marginBottom: '.75rem' }}>✦ ✦ ✦</div>
+        <h1 style={{ fontFamily: "'Nodesto Cyrillic', 'Alegreya SC', serif", fontSize: '2.2rem', fontWeight: 900, color: '#c9a84c', letterSpacing: '.08em', marginBottom: '.5rem' }}>
+          ВАРНТАЛ
+        </h1>
+        <p style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.65rem', letterSpacing: '.35em', color: '#7a5c38', textTransform: 'uppercase' }}>
+          Между вздохами · D&D 5e Homebrew
+        </p>
+        <div className="divider-gold-short" style={{ marginTop: '1.25rem' }} />
       </div>
+
+      {/* Быстрые действия */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '.75rem', padding: '1.25rem 2rem', borderBottom: '1px solid #3d2a10' }}>
+        <button className="btn-fantasy btn-crimson" onClick={() => setShowCreate(true)}>
+          ✦ Новая кампания
+        </button>
+        <button className="btn-fantasy btn-ghost" onClick={() => setShowJoin(true)}>
+          ◈ Присоединиться
+        </button>
+        <a href="/campaign/import" className="btn-fantasy btn-ghost" style={{ textDecoration: 'none' }}>
+          ⬆ Импорт Варнтала
+        </a>
+      </div>
+
+      {/* Основной контент */}
+      <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+
+        {/* Кампании */}
+        <section>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', marginBottom: '1.25rem' }}>
+            <span style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.65rem', letterSpacing: '.3em', color: '#8b6914', textTransform: 'uppercase' }}>Мои кампании</span>
+            <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, #3d2a10, transparent)' }} />
+          </div>
+
+          {sessions.length === 0 ? (
+            <div className="card card-gold" style={{ padding: '2.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '.75rem', opacity: .4 }}>⚔</div>
+              <p style={{ color: '#7a5c38', fontFamily: "'Mookmania', 'Alegreya SC', serif", fontSize: '1rem', fontStyle: 'italic' }}>Нет кампаний</p>
+              <button className="btn-fantasy btn-gold" style={{ marginTop: '1rem', fontSize: '.65rem' }} onClick={() => setShowCreate(true)}>
+                Начать кампанию
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
+              {sessions.map(s => (
+                <div
+                  key={s.id}
+                  onClick={() => router.push(`/session/${s.code}`)}
+                  className="card"
+                  style={{
+                    padding: '1rem 1.25rem',
+                    cursor: 'pointer',
+                    borderColor: '#3d2a10',
+                    transition: 'all .15s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#6b4f1e'; (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(139,105,20,.1)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#3d2a10'; (e.currentTarget as HTMLElement).style.boxShadow = 'none' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <h3 style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.9rem', color: '#f4e8cc', marginBottom: '.3rem' }}>{s.name}</h3>
+                      <p style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.6rem', letterSpacing: '.15em', color: '#7a5c38' }}>
+                        КОД: <span style={{ color: '#c9a84c', fontFamily: 'monospace', letterSpacing: '.2em' }}>{s.code}</span>
+                      </p>
+                    </div>
+                    <span style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.6rem', letterSpacing: '.1em', color: STATUS_COLOR[s.status] ?? '#7a5c38', textTransform: 'uppercase' }}>
+                      {STATUS_LABEL[s.status] ?? s.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Персонажи */}
+        <section>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', marginBottom: '1.25rem' }}>
+            <span style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.65rem', letterSpacing: '.3em', color: '#8b6914', textTransform: 'uppercase' }}>Персонажи</span>
+            <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, #3d2a10, transparent)' }} />
+            <button
+              className="btn-fantasy btn-ghost"
+              style={{ fontSize: '.6rem', padding: '.3rem .75rem' }}
+              onClick={() => router.push('/character/new')}
+            >+ Создать</button>
+          </div>
+
+          {characters.length === 0 ? (
+            <div className="card card-gold" style={{ padding: '2.5rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '.75rem', opacity: .4 }}>✧</div>
+              <p style={{ color: '#7a5c38', fontFamily: "'Mookmania', 'Alegreya SC', serif", fontSize: '1rem', fontStyle: 'italic' }}>Нет персонажей</p>
+              <button className="btn-fantasy btn-gold" style={{ marginTop: '1rem', fontSize: '.65rem' }} onClick={() => router.push('/character/new')}>
+                Создать персонажа
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
+              {characters.map(char => (
+                <div
+                  key={char.id}
+                  onClick={() => router.push(`/character/${char.id}`)}
+                  className="card"
+                  style={{ padding: '1rem 1.25rem', cursor: 'pointer', borderColor: '#3d2a10', transition: 'all .15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#6b4f1e'; (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(139,105,20,.1)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#3d2a10'; (e.currentTarget as HTMLElement).style.boxShadow = 'none' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <h3 style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.9rem', color: '#f4e8cc', marginBottom: '.3rem' }}>{char.name}</h3>
+                      <p style={{ color: '#7a5c38', fontSize: '.85rem', fontFamily: "'Mookmania', 'Alegreya SC', serif" }}>
+                        {char.race} · {char.class} · {char.level} ур.
+                      </p>
+                    </div>
+                    <div style={{ textAlign: 'right', fontFamily: "'Alegreya SC', serif", fontSize: '.65rem' }}>
+                      <p style={{ color: '#c0392b', letterSpacing: '.08em' }}>{char.hp_current}/{char.hp_max} HP</p>
+                      <p style={{ color: '#7a5c38', marginTop: '.2rem' }}>КД {char.armor_class}</p>
+                    </div>
+                  </div>
+                  {/* Мини статы */}
+                  <div style={{ display: 'flex', gap: '.5rem', marginTop: '.75rem', flexWrap: 'wrap' }}>
+                    {(['str','dex','con','int','wis','cha'] as const).map(stat => (
+                      <div key={stat} style={{ textAlign: 'center', minWidth: '2.5rem' }}>
+                        <div style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.5rem', letterSpacing: '.1em', color: '#6b4f1e', textTransform: 'uppercase' }}>{stat}</div>
+                        <div style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.75rem', color: '#c9a884' }}>{formatModifier(getModifier((char.stats as Record<string, number>)?.[stat] ?? 10))}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Модал создания сессии */}
+      {showCreate && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: 'rgba(0,0,0,.75)' }} onClick={() => { setShowCreate(false); setError('') }}>
+          <div className="w-full max-w-md fade-up" style={{ background: 'linear-gradient(160deg, #1e1508, #130d04)', border: '1px solid #6b4f1e', borderRadius: '.75rem', padding: '2rem', boxShadow: '0 0 40px rgba(0,0,0,.8)' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontFamily: "'Alegreya SC', serif", fontSize: '1rem', color: '#c9a84c', letterSpacing: '.08em', marginBottom: '1.25rem' }}>Новая кампания</h3>
+            <input
+              value={sessionName}
+              onChange={e => setSessionName(e.target.value)}
+              placeholder="Название кампании"
+              className="input-fantasy"
+              style={{ marginBottom: '1rem' }}
+              onKeyDown={e => e.key === 'Enter' && createSession()}
+            />
+            {error && <p style={{ color: '#e88070', fontSize: '.9rem', marginBottom: '.75rem' }}>{error}</p>}
+            <div style={{ display: 'flex', gap: '.75rem' }}>
+              <button className="btn-fantasy btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setShowCreate(false); setError('') }}>Отмена</button>
+              <button className="btn-fantasy btn-crimson" style={{ flex: 1, justifyContent: 'center' }} disabled={loading || !sessionName.trim()} onClick={createSession}>
+                {loading ? '...' : 'Создать'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модал присоединения */}
+      {showJoin && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: 'rgba(0,0,0,.75)' }} onClick={() => { setShowJoin(false); setError('') }}>
+          <div className="w-full max-w-md fade-up" style={{ background: 'linear-gradient(160deg, #1e1508, #130d04)', border: '1px solid #6b4f1e', borderRadius: '.75rem', padding: '2rem', boxShadow: '0 0 40px rgba(0,0,0,.8)' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontFamily: "'Alegreya SC', serif", fontSize: '1rem', color: '#c9a84c', letterSpacing: '.08em', marginBottom: '1.25rem' }}>Присоединиться к сессии</h3>
+            <input
+              value={joinCode}
+              onChange={e => setJoinCode(e.target.value.toUpperCase())}
+              placeholder="ABC-123"
+              className="input-fantasy"
+              style={{ marginBottom: '1rem', textAlign: 'center', fontFamily: 'monospace', letterSpacing: '.3em', fontSize: '1.2rem' }}
+              maxLength={7}
+              onKeyDown={e => e.key === 'Enter' && joinSession()}
+            />
+            {error && <p style={{ color: '#e88070', fontSize: '.9rem', marginBottom: '.75rem' }}>{error}</p>}
+            <div style={{ display: 'flex', gap: '.75rem' }}>
+              <button className="btn-fantasy btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setShowJoin(false); setError('') }}>Отмена</button>
+              <button className="btn-fantasy btn-gold" style={{ flex: 1, justifyContent: 'center' }} disabled={loading || joinCode.length < 7} onClick={joinSession}>
+                {loading ? '...' : 'Войти'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

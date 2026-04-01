@@ -5,6 +5,8 @@ import MapDisplay from './MapDisplay'
 export default async function MapDisplayPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
   const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { data: session } = await supabase.from('sessions').select('*').eq('code', code.toUpperCase()).single()
   if (!session) notFound()
 
@@ -14,5 +16,13 @@ export default async function MapDisplayPage({ params }: { params: Promise<{ cod
     supabase.from('fog_state').select('*').eq('session_id', session.id).single(),
   ])
 
-  return <MapDisplay session={session} initialTokens={tokens ?? []} initialMapState={mapState ?? null} initialFogState={fogState ?? null} />
+  return (
+    <MapDisplay
+      session={session}
+      isMaster={session.master_id === user?.id}
+      initialTokens={tokens ?? []}
+      initialMapState={mapState ?? null}
+      initialFogState={fogState ?? null}
+    />
+  )
 }

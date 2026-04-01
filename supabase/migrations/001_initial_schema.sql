@@ -26,8 +26,7 @@ CREATE TABLE sessions (
 );
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "master_owns" ON sessions FOR ALL USING (master_id = auth.uid());
-CREATE POLICY "player_reads" ON sessions FOR SELECT
-  USING (id IN (SELECT session_id FROM session_players WHERE user_id = auth.uid()));
+-- player_reads добавляется после создания session_players (см. ниже)
 
 -- SESSION_PLAYERS
 CREATE TABLE session_players (
@@ -43,6 +42,10 @@ ALTER TABLE session_players ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "master_manages" ON session_players FOR ALL
   USING (session_id IN (SELECT id FROM sessions WHERE master_id = auth.uid()));
 CREATE POLICY "player_reads_own" ON session_players FOR SELECT USING (user_id = auth.uid());
+
+-- Политика sessions, зависящая от session_players
+CREATE POLICY "player_reads" ON sessions FOR SELECT
+  USING (id IN (SELECT session_id FROM session_players WHERE user_id = auth.uid()));
 
 -- CHARACTERS
 CREATE TABLE characters (
@@ -313,7 +316,7 @@ CREATE TABLE bestiary (
   is_homebrew      bool DEFAULT false,
   created_by       uuid REFERENCES auth.users(id),
   created_at       timestamptz DEFAULT now(),
-  search_vector    tsvector GENERATED ALWAYS AS (to_tsvector('russian', name)) STORED
+  search_vector    tsvector GENERATED ALWAYS AS (to_tsvector('simple', name)) STORED
 );
 ALTER TABLE bestiary ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "all_read_official" ON bestiary FOR SELECT USING (is_homebrew = false);
@@ -338,7 +341,7 @@ CREATE TABLE loot_items (
   is_homebrew         bool DEFAULT false,
   created_by          uuid REFERENCES auth.users(id),
   created_at          timestamptz DEFAULT now(),
-  search_vector       tsvector GENERATED ALWAYS AS (to_tsvector('russian', name || ' ' || description)) STORED
+  search_vector       tsvector GENERATED ALWAYS AS (to_tsvector('simple', name || ' ' || description)) STORED
 );
 ALTER TABLE loot_items ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "all_read_official" ON loot_items FOR SELECT USING (is_homebrew = false);
@@ -365,7 +368,7 @@ CREATE TABLE spells (
   classes       jsonb NOT NULL DEFAULT '[]',
   is_homebrew   bool DEFAULT false,
   created_by    uuid REFERENCES auth.users(id),
-  search_vector tsvector GENERATED ALWAYS AS (to_tsvector('russian', name)) STORED
+  search_vector tsvector GENERATED ALWAYS AS (to_tsvector('simple', name)) STORED
 );
 ALTER TABLE spells ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "all_read_official" ON spells FOR SELECT USING (is_homebrew = false);

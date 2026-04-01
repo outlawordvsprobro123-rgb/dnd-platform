@@ -6,9 +6,11 @@ const schema = z.object({
   owner_type: z.enum(['player', 'npc', 'object']),
   owner_id: z.string().uuid().optional(),
   label: z.string().min(1),
-  image_url: z.string().optional(),
+  image_url: z.string().nullable().optional(),
   x: z.number().default(100),
   y: z.number().default(100),
+  width: z.number().int().min(10).max(300).optional(),
+  height: z.number().int().min(10).max(300).optional(),
   hp_max: z.number().int().optional(),
   hp_current: z.number().int().optional(),
 })
@@ -37,7 +39,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const body = schema.safeParse(await req.json())
   if (!body.success) return NextResponse.json({ error: 'Неверные данные' }, { status: 422 })
 
-  const insertData = { ...body.data, session_id: id, hp_current: body.data.hp_current ?? body.data.hp_max ?? null }
+  const insertData = { ...body.data, session_id: id, hp_current: body.data.hp_current ?? body.data.hp_max ?? null, show_hp: true, visible_to_players: true }
   const { data, error } = await supabase.from('map_tokens').insert(insertData).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ token: data }, { status: 201 })

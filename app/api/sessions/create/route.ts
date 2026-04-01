@@ -35,5 +35,12 @@ export async function POST(req: Request) {
     .select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Инициализируем состояние карты и тумана
+  await Promise.all([
+    supabase.from('map_state').insert({ session_id: data.id }),
+    supabase.from('fog_state').insert({ session_id: data.id, fog_enabled: false, revealed_zones: [] }),
+  ])
+
   return NextResponse.json({ session: data }, { status: 201 })
 }

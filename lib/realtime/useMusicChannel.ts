@@ -3,12 +3,14 @@
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useMusicStore } from '@/lib/stores/musicStore'
+import { useSessionStore } from '@/lib/stores/sessionStore'
 import { getAudioManager } from '@/lib/utils/audio'
 import type { MusicState } from '@/lib/supabase/types'
 
 export function useMusicChannel(sessionId: string) {
   const supabase = createClient()
   const { scenes, setCurrentScene, setStatus, volume } = useMusicStore()
+  const { isMaster } = useSessionStore()
 
   useEffect(() => {
     if (!sessionId) return
@@ -21,6 +23,9 @@ export function useMusicChannel(sessionId: string) {
     }, ({ new: state }) => {
       const musicState = state as MusicState
       const audio = getAudioManager()
+
+      // Мастер уже играет локально, только игроки реагируют на Realtime
+      if (isMaster) return
 
       if (musicState.status === 'playing' && musicState.scene_id) {
         const scene = scenes.find(s => s.id === musicState.scene_id)
@@ -41,5 +46,5 @@ export function useMusicChannel(sessionId: string) {
 
     channel.subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [sessionId, scenes, volume])
+  }, [sessionId, scenes, volume, isMaster])
 }

@@ -2,25 +2,37 @@
 import { useSessionStore } from '@/lib/stores/sessionStore'
 
 export function PlayerList() {
-  const { players, session, isMaster } = useSessionStore()
+  const { players, session } = useSessionStore()
 
   return (
-    <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-      <h3 className="font-semibold text-sm text-gray-200 mb-3">👥 Игроки</h3>
-      <div className="space-y-2">
+    <div className="card" style={{ padding: '.75rem', borderColor: 'var(--border)' }}>
+      <div style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.6rem', letterSpacing: '.25em', color: 'var(--gold-dim)', textTransform: 'uppercase', marginBottom: '.6rem' }}>
+        Игроки
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
         {players.map(player => (
-          <div key={player.id} className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${player.status === 'online' ? 'bg-green-500' : 'bg-gray-500'}`} />
-            <span className="text-sm text-gray-300 truncate">{player.user_id.slice(0, 8)}...</span>
-            {player.status === 'kicked' && <span className="text-xs text-red-400">исключён</span>}
+          <div key={player.id} style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+            <div style={{
+              width: '.45rem', height: '.45rem', borderRadius: '50%', flexShrink: 0,
+              background: player.status === 'online' ? '#4ade80' : 'var(--text-muted)',
+              boxShadow: player.status === 'online' ? '0 0 6px rgba(74,222,128,.5)' : 'none',
+            }} />
+            <span style={{ fontSize: '.75rem', color: 'var(--text-secondary)', fontFamily: "'Mookmania', 'Alegreya SC', serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {player.user_id.slice(0, 8)}...
+            </span>
+            {player.status === 'kicked' && (
+              <span style={{ fontSize: '.6rem', color: '#e88070', fontFamily: "'Alegreya SC', serif" }}>исключён</span>
+            )}
           </div>
         ))}
-        {players.length === 0 && <p className="text-gray-500 text-sm">Нет игроков</p>}
+        {players.length === 0 && (
+          <p style={{ color: 'var(--text-muted)', fontFamily: "'Mookmania', 'Alegreya SC', serif", fontStyle: 'italic', fontSize: '.8rem' }}>Нет игроков</p>
+        )}
       </div>
       {session && (
-        <div className="mt-3 pt-3 border-t border-gray-700">
-          <p className="text-xs text-gray-500">Код сессии:</p>
-          <p className="text-purple-400 font-mono text-lg font-bold tracking-widest">{session.code}</p>
+        <div style={{ marginTop: '.6rem', paddingTop: '.6rem', borderTop: '1px solid var(--border)' }}>
+          <p style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.55rem', letterSpacing: '.2em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '.3rem' }}>Код сессии:</p>
+          <p style={{ fontFamily: 'monospace', fontSize: '.9rem', color: 'var(--gold)', letterSpacing: '.25em', fontWeight: 700 }}>{session.code}</p>
         </div>
       )}
     </div>

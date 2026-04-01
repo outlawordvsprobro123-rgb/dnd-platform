@@ -7,12 +7,16 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants = {
-  primary: 'bg-purple-600 hover:bg-purple-500 text-white',
-  secondary: 'bg-gray-700 hover:bg-gray-600 text-white',
-  danger: 'bg-red-700 hover:bg-red-600 text-white',
-  ghost: 'bg-transparent hover:bg-gray-700 text-gray-300',
+  primary:   'btn-fantasy btn-gold',
+  secondary: 'btn-fantasy btn-ghost',
+  danger:    'btn-fantasy btn-crimson',
+  ghost:     'btn-fantasy btn-ghost',
 }
-const sizes = { sm: 'px-3 py-1.5 text-sm', md: 'px-4 py-2', lg: 'px-6 py-3 text-lg' }
+const sizes = {
+  sm: 'text-xs px-3 py-1.5',
+  md: '',
+  lg: 'text-sm px-6 py-3',
+}
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   { variant = 'primary', size = 'md', loading, disabled, children, className = '', ...props }, ref
@@ -21,10 +25,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <button
       ref={ref}
       disabled={disabled || loading}
-      className={`${variants[variant]} ${sizes[size]} rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      className={`${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >
-      {loading ? <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : children}
+      {loading
+        ? <span className="inline-block w-4 h-4 border-2 rounded-full animate-spin"
+            style={{ borderColor: 'rgba(201,168,76,.3)', borderTopColor: '#c9a84c' }} />
+        : children}
     </button>
   )
 })

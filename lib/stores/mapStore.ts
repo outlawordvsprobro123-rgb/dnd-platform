@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { MapToken, MapState, FogState, FogZone } from '@/lib/supabase/types'
 
-type MapTool = 'select' | 'fog-reveal' | 'fog-hide' | 'ruler' | 'token'
+type MapTool = 'select' | 'fog-reveal' | 'fog-hide' | 'ruler' | 'token' | 'ping'
 
 interface MapStore {
   tokens: MapToken[]
@@ -9,6 +9,7 @@ interface MapStore {
   fogState: FogState | null
   selectedTool: MapTool
   selectedTokenId: string | null
+  pings: { id: string; x: number; y: number; label: string }[]
 
   setTokens: (tokens: MapToken[]) => void
   addToken: (token: MapToken) => void
@@ -19,6 +20,8 @@ interface MapStore {
   updateFogZones: (zones: FogZone[]) => void
   setSelectedTool: (tool: MapTool) => void
   setSelectedTokenId: (id: string | null) => void
+  addPing: (ping: { id: string; x: number; y: number; label: string }) => void
+  removePing: (id: string) => void
   reset: () => void
 }
 
@@ -28,6 +31,7 @@ export const useMapStore = create<MapStore>((set) => ({
   fogState: null,
   selectedTool: 'select',
   selectedTokenId: null,
+  pings: [],
 
   setTokens: (tokens) => set({ tokens }),
   addToken: (token) => set((s) => ({ tokens: [...s.tokens, token] })),
@@ -42,5 +46,7 @@ export const useMapStore = create<MapStore>((set) => ({
   })),
   setSelectedTool: (selectedTool) => set({ selectedTool }),
   setSelectedTokenId: (selectedTokenId) => set({ selectedTokenId }),
-  reset: () => set({ tokens: [], mapState: null, fogState: null, selectedTool: 'select', selectedTokenId: null }),
+  addPing: (ping) => set((s) => ({ pings: [...s.pings, ping] })),
+  removePing: (id) => set((s) => ({ pings: s.pings.filter(p => p.id !== id) })),
+  reset: () => set({ tokens: [], mapState: null, fogState: null, selectedTool: 'select', selectedTokenId: null, pings: [] }),
 }))

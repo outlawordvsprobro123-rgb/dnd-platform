@@ -1,0 +1,1964 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Варнтал — Книга Кампании</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;900&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #faf6ef;
+  --parch: #f4e8cc;
+  --parch2: #ede0b8;
+  --ink: #1a0f08;
+  --ink2: #2e1a0c;
+  --ink3: #5a3818;
+  --red: #8B1500;
+  --red2: #5a0e00;
+  --gold: #8B6914;
+  --gold2: #c9a84c;
+  --border: #c8a070;
+  --border2: #e0c898;
+  --shadow: rgba(80,40,10,.14);
+  --act1: #8B1500;
+  --act2: #7a3a00;
+  --act3: #4a1a7a;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'EB Garamond', Georgia, serif;
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+/* ══ LAYOUT ══ */
+#book {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+
+/* ══ SIDEBAR ══ */
+#toc {
+  background: var(--parch);
+  border-right: 2px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+#toc::-webkit-scrollbar { width: 4px; }
+#toc::-webkit-scrollbar-thumb { background: var(--border); }
+
+.toc-header {
+  padding: 24px 20px 18px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--parch2), var(--parch));
+  flex-shrink: 0;
+}
+.toc-logo {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--red);
+  letter-spacing: 2px;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.toc-sub {
+  font-size: 11px;
+  color: var(--ink3);
+  font-style: italic;
+  letter-spacing: 1px;
+}
+
+.toc-nav { padding: 8px 0; flex: 1; }
+
+.toc-part {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  text-transform: uppercase;
+  padding: 12px 18px 4px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.toc-part::after { content:''; flex:1; height:1px; background: var(--border2); }
+
+.toc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 18px;
+  cursor: pointer;
+  transition: all .14s;
+  border-left: 3px solid transparent;
+  font-size: 12px;
+  color: var(--ink3);
+  line-height: 1.4;
+}
+.toc-item:hover { background: rgba(139,105,20,.06); color: var(--ink); }
+.toc-item.active { border-left-color: var(--red); background: rgba(139,21,0,.05); color: var(--red); }
+.toc-num { font-family: 'Cinzel', serif; font-size: 9px; color: var(--gold); min-width: 20px; margin-top: 2px; }
+.toc-name { flex: 1; }
+.toc-act { font-family: 'Cinzel', serif; font-size: 7px; letter-spacing: 1px; padding: 1px 4px; border: 1px solid; flex-shrink: 0; margin-top: 2px; }
+
+.toc-footer {
+  padding: 14px 18px;
+  border-top: 1px solid var(--border2);
+  font-size: 10px;
+  color: var(--ink3);
+  font-style: italic;
+  text-align: center;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+
+/* ══ MAIN CONTENT ══ */
+#content {
+  max-width: 820px;
+  padding: 0;
+  overflow-y: auto;
+}
+
+/* ══ PAGES ══ */
+.page { display: none; padding: 56px 72px 80px; }
+.page.active { display: block; animation: pageFade .3s ease; }
+@keyframes pageFade { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform:none; } }
+
+/* ══ COVER PAGE ══ */
+#page-cover {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: linear-gradient(180deg, var(--cream) 0%, var(--parch) 50%, var(--parch2) 100%);
+  position: relative;
+  overflow: hidden;
+}
+#page-cover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(139,105,20,.04) 40px, rgba(139,105,20,.04) 41px),
+    repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(139,105,20,.04) 40px, rgba(139,105,20,.04) 41px);
+}
+.cover-ornament { font-size: 36px; color: var(--border); margin-bottom: 24px; letter-spacing: 12px; }
+.cover-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 64px;
+  font-weight: 900;
+  color: var(--red);
+  letter-spacing: 6px;
+  line-height: 1.1;
+  margin-bottom: 12px;
+  position: relative;
+}
+.cover-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--red), transparent);
+}
+.cover-subtitle {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  letter-spacing: 5px;
+  color: var(--ink3);
+  text-transform: uppercase;
+  margin-top: 24px;
+  margin-bottom: 40px;
+}
+.cover-desc {
+  font-size: 16px;
+  color: var(--ink3);
+  font-style: italic;
+  max-width: 480px;
+  line-height: 1.8;
+  margin-bottom: 40px;
+}
+.cover-meta {
+  display: flex;
+  gap: 32px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.cover-meta-item { text-align: center; }
+.cover-meta-val { font-size: 22px; font-weight: 900; color: var(--red); display: block; margin-bottom: 3px; }
+
+/* ══ TYPOGRAPHY ══ */
+.chapter-header {
+  margin-bottom: 48px;
+  position: relative;
+}
+.chapter-eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 5px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.chapter-eyebrow::before, .chapter-eyebrow::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border2));
+}
+.chapter-eyebrow::before { background: linear-gradient(90deg, var(--border2), transparent); }
+.chapter-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 38px;
+  font-weight: 900;
+  color: var(--red);
+  line-height: 1.15;
+  margin-bottom: 10px;
+}
+.chapter-sub {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  color: var(--ink3);
+  letter-spacing: 2px;
+  font-weight: 400;
+}
+.chapter-rule {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, var(--red), var(--border), transparent);
+  margin-top: 20px;
+}
+
+h2 {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--red);
+  letter-spacing: 1px;
+  margin: 44px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border2);
+  position: relative;
+}
+h2::before {
+  content: '✦';
+  font-size: 10px;
+  color: var(--gold);
+  margin-right: 10px;
+}
+
+h3 {
+  font-family: 'Cinzel', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink2);
+  letter-spacing: .5px;
+  margin: 28px 0 10px;
+}
+
+h4 {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 20px 0 8px;
+}
+
+p { margin-bottom: 16px; color: var(--ink2); }
+
+/* Drop cap */
+.dropcap::first-letter {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 72px;
+  font-weight: 900;
+  color: var(--red);
+  float: left;
+  line-height: 0.82;
+  margin: 6px 10px 0 0;
+  padding: 0 2px;
+}
+
+/* Ornament */
+.ornament {
+  text-align: center;
+  color: var(--border);
+  font-size: 20px;
+  margin: 36px 0;
+  letter-spacing: 10px;
+  user-select: none;
+}
+
+/* ══ ATMOSPHERE BOX ══ */
+.atm-box {
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--gold);
+  padding: 18px 22px;
+  margin: 24px 0;
+  background: linear-gradient(135deg, var(--parch) 0%, var(--cream) 100%);
+  position: relative;
+}
+.atm-box::before {
+  content: 'ЗАЧИТАЙ ВСЛУХ';
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  text-transform: uppercase;
+  position: absolute;
+  top: -1px;
+  left: 20px;
+  background: var(--parch);
+  padding: 0 6px;
+  transform: translateY(-50%);
+}
+.atm-text {
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--ink2);
+  font-style: italic;
+}
+
+/* ══ DIALOG BOX ══ */
+.dialog-box {
+  margin: 20px 0;
+  border: 1px solid var(--border2);
+  border-left: 4px solid var(--ink3);
+  background: rgba(255,255,255,.4);
+}
+.dialog-speaker {
+  background: var(--parch2);
+  padding: 8px 16px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--red);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dialog-speaker-emoji { font-size: 14px; }
+.dialog-lines { padding: 14px 18px; }
+.dialog-line {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--ink2);
+  font-style: italic;
+  margin-bottom: 10px;
+  padding-left: 20px;
+  border-left: 2px solid var(--border2);
+  position: relative;
+}
+.dialog-line::before {
+  content: '"';
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 28px;
+  color: var(--border);
+  position: absolute;
+  left: -4px;
+  top: -6px;
+  line-height: 1;
+}
+.dialog-line:last-child { margin-bottom: 0; }
+.dialog-note {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--ink3);
+  padding: 6px 18px;
+  background: rgba(0,0,0,.03);
+  border-top: 1px solid var(--border2);
+  font-style: italic;
+}
+
+/* ══ SECRET BOX ══ */
+.secret-box {
+  border: 1px solid rgba(139,21,0,.2);
+  border-left: 5px solid var(--red);
+  padding: 16px 20px;
+  margin: 20px 0;
+  background: rgba(139,21,0,.04);
+  position: relative;
+}
+.secret-box::before {
+  content: '🔒 ТОЛЬКО ДЛЯ МАСТЕРА';
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--red);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 8px;
+}
+.secret-text { font-size: 14px; color: #7a2a1a; line-height: 1.7; font-style: italic; }
+
+/* ══ MASTER TIP ══ */
+.tip-box {
+  border: 1px solid rgba(42,106,42,.25);
+  border-left: 4px solid #2a7a3a;
+  padding: 12px 16px;
+  margin: 16px 0;
+  background: rgba(42,106,42,.04);
+}
+.tip-box::before {
+  content: '💡 СОВЕТ МАСТЕРА: ';
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #2a7a3a;
+  text-transform: uppercase;
+}
+.tip-text { font-size: 14px; color: #3a5a3a; line-height: 1.6; }
+
+/* ══ CHECK BOX ══ */
+.check-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 14px; }
+.check-table th {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 8px 12px;
+  background: var(--parch2);
+  border: 1px solid var(--border);
+  color: var(--gold);
+  text-align: left;
+}
+.check-table td {
+  padding: 8px 12px;
+  border: 1px solid var(--border2);
+  color: var(--ink3);
+  line-height: 1.5;
+  vertical-align: top;
+}
+.check-table tr:nth-child(even) td { background: rgba(0,0,0,.03); }
+.check-skill { font-family: 'Cinzel', serif; font-size: 11px; color: var(--red); font-weight: 600; }
+
+/* ══ CHOICE BOX ══ */
+.choice-box {
+  border: 1px solid var(--border);
+  margin: 20px 0;
+  background: var(--parch);
+}
+.choice-title {
+  background: var(--parch2);
+  padding: 10px 16px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.choice-q {
+  padding: 12px 16px 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  color: var(--ink);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border2);
+}
+.choice-option {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border2);
+}
+.choice-option:last-child { border-bottom: none; }
+.co-arrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 900;
+  flex-shrink: 0;
+  width: 20px;
+  margin-top: 2px;
+}
+.co-yes { color: #2a7a3a; }
+.co-no { color: var(--red); }
+.co-alt { color: var(--gold); }
+.co-body { flex: 1; }
+.co-head { font-weight: 600; color: var(--ink); margin-bottom: 3px; font-size: 14px; }
+.co-detail { color: var(--ink3); font-size: 13px; line-height: 1.6; margin-bottom: 5px; }
+.co-effect {
+  font-size: 12px;
+  color: #3a5a20;
+  padding: 4px 8px;
+  background: rgba(42,90,32,.06);
+  border-left: 2px solid #4a8a30;
+}
+
+/* ══ STAT BLOCK ══ */
+.stat-block {
+  border: 2px solid var(--border);
+  margin: 24px 0;
+  background: var(--parch);
+  font-size: 14px;
+}
+.sb-title-bar {
+  background: var(--red);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sb-emoji { font-size: 24px; }
+.sb-name { font-family: 'Cinzel', serif; font-size: 18px; font-weight: 900; color: #fff; flex: 1; }
+.sb-cr { font-family: 'Cinzel', serif; font-size: 11px; color: rgba(255,255,255,.7); letter-spacing: 1px; }
+.sb-type { font-size: 12px; color: rgba(255,255,255,.8); font-style: italic; }
+.sb-divider { height: 4px; background: var(--gold); }
+.sb-stats {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  border-bottom: 1px solid var(--border);
+}
+.sb-stat { text-align: center; padding: 10px; border-right: 1px solid var(--border2); }
+.sb-stat:last-child { border-right: none; }
+.sb-stat-label { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 1.5px; color: var(--red); text-transform: uppercase; margin-bottom: 3px; }
+.sb-stat-val { font-family: 'Cinzel', serif; font-size: 18px; font-weight: 600; color: var(--ink); }
+.sb-body { padding: 14px 16px; }
+.sb-row { padding: 5px 0; border-bottom: 1px dotted var(--border2); font-size: 13px; line-height: 1.5; }
+.sb-row:last-child { border-bottom: none; }
+.sb-row strong { font-family: 'Cinzel', serif; font-size: 11px; color: var(--red); letter-spacing: .5px; }
+.sb-ability { font-size: 14px; padding: 7px 0; border-bottom: 1px solid var(--border2); }
+.sb-ability strong { font-family: 'Cinzel', serif; font-size: 12px; font-weight: 600; color: var(--ink); }
+.sb-phase {
+  padding: 10px 12px;
+  border-left: 3px solid;
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  background: rgba(139,21,0,.04);
+}
+.sb-lore {
+  padding: 10px 12px;
+  background: rgba(139,105,20,.05);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--gold);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink3);
+  line-height: 1.6;
+  margin-top: 10px;
+}
+
+/* ══ INFO TABLE ══ */
+.info-table { width: 100%; border-collapse: collapse; margin: 14px 0; }
+.info-table td { padding: 8px 12px; border: 1px solid var(--border2); font-size: 14px; line-height: 1.5; vertical-align: top; }
+.info-table td:first-child { background: var(--parch2); font-family: 'Cinzel', serif; font-size: 11px; color: var(--gold); letter-spacing: .5px; width: 180px; font-weight: 600; }
+
+/* ══ ACT BANNER ══ */
+.act-banner {
+  padding: 24px 28px;
+  margin: 32px 0;
+  border: 2px solid;
+  position: relative;
+  overflow: hidden;
+}
+.act-banner::before {
+  content: attr(data-act);
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 120px;
+  font-weight: 900;
+  position: absolute;
+  right: -10px;
+  top: -20px;
+  opacity: .06;
+  color: currentColor;
+  line-height: 1;
+}
+.act-banner-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 8px; }
+.act-banner-title { font-family: 'Cinzel Decorative', serif; font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+.act-banner-levels { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 2px; opacity: .7; }
+.act-banner-desc { font-size: 15px; font-style: italic; margin-top: 10px; line-height: 1.7; opacity: .85; }
+
+/* ══ SCENE HEADER ══ */
+.scene-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 36px 0 16px;
+  padding: 12px 16px;
+  background: var(--parch2);
+  border-left: 5px solid var(--red);
+}
+.scene-num {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--red);
+  min-width: 32px;
+}
+.scene-title { font-family: 'Cinzel', serif; font-size: 16px; font-weight: 600; color: var(--ink); }
+.scene-type {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  padding: 3px 8px;
+  border: 1px solid;
+  text-transform: uppercase;
+  margin-left: auto;
+}
+
+/* ══ SESSION HEADER ══ */
+.session-banner {
+  background: linear-gradient(135deg, var(--parch2), var(--parch));
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--red);
+  padding: 18px 22px;
+  margin: 32px 0 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+.session-num {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 42px;
+  font-weight: 900;
+  color: var(--red);
+  opacity: .2;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.session-info { flex: 1; }
+.session-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px; color: var(--gold); text-transform: uppercase; margin-bottom: 4px; }
+.session-title { font-family: 'Cinzel', serif; font-size: 20px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+.session-hook { font-size: 13px; color: var(--ink3); font-style: italic; }
+
+/* ══ PAGE NAV ══ */
+#page-nav {
+  position: fixed;
+  bottom: 24px;
+  right: 28px;
+  display: flex;
+  gap: 8px;
+  z-index: 100;
+}
+.nav-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  background: var(--parch);
+  color: var(--ink3);
+  cursor: pointer;
+  transition: all .15s;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.nav-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* ══ PROGRESS ══ */
+#progress-bar {
+  position: fixed;
+  top: 0;
+  left: 280px;
+  right: 0;
+  height: 3px;
+  background: var(--border2);
+  z-index: 200;
+}
+#progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), var(--gold));
+  transition: width .3s;
+}
+
+/* ══ FACTION BADGE ══ */
+.faction-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 3px 9px;
+  border: 1px solid;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+/* ══ PULL QUOTE ══ */
+.pull-quote {
+  font-family: 'EB Garamond', serif;
+  font-size: 20px;
+  font-style: italic;
+  color: var(--ink3);
+  text-align: center;
+  padding: 24px 48px;
+  border-top: 1px solid var(--border2);
+  border-bottom: 1px solid var(--border2);
+  margin: 32px 0;
+  line-height: 1.8;
+  position: relative;
+}
+.pull-quote::before {
+  content: '❝';
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 48px;
+  color: var(--border);
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  line-height: 1;
+}
+.pq-attr {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  display: block;
+  margin-top: 10px;
+  font-style: normal;
+  text-align: right;
+}
+
+/* Print */
+@media print {
+  #toc, #page-nav, #progress-bar { display: none; }
+  #book { grid-template-columns: 1fr; }
+  .page { display: block !important; padding: 2cm; page-break-after: always; }
+}
+</style>
+</head>
+<body>
+
+<div id="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
+
+<div id="book">
+
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<nav id="toc">
+  <div class="toc-header">
+    <div class="toc-logo">ВАРНТАЛ</div>
+    <div class="toc-sub">Книга Кампании · D&D 5e</div>
+  </div>
+  <div class="toc-nav" id="toc-nav"></div>
+  <div class="toc-footer">Homebrew · CC BY NC<br>Все права принадлежат автору</div>
+</nav>
+
+<!-- ══════════════ CONTENT ══════════════ -->
+<main id="content">
+
+<!-- ════ ОБЛОЖКА ════ -->
+<div class="page active" id="page-cover-page" data-title="Обложка" data-part="Начало">
+  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:linear-gradient(180deg,var(--cream),var(--parch));position:relative;padding:60px">
+    <div class="cover-ornament">✦ ✦ ✦</div>
+    <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:6px;color:var(--ink3);text-transform:uppercase;margin-bottom:16px">Книга кампании</div>
+    <div style="font-family:'Cinzel Decorative',serif;font-size:80px;font-weight:900;color:var(--red);letter-spacing:4px;line-height:1;margin-bottom:8px">ВАРНТАЛ</div>
+    <div style="width:300px;height:2px;background:linear-gradient(90deg,transparent,var(--red),transparent);margin:0 auto 24px"></div>
+    <div style="font-family:'Cinzel',serif;font-size:13px;letter-spacing:5px;color:var(--ink3);text-transform:uppercase;margin-bottom:48px">Между вздохами</div>
+    <div style="font-size:16px;color:var(--ink3);font-style:italic;max-width:460px;line-height:1.9;margin-bottom:48px">
+      Три тысячи лет назад боги замолчали.<br>
+      Не умерли — были запечатаны.<br>
+      Не богами, не чудовищами — людьми.<br>
+      Магами, которые хотели власти.
+    </div>
+    <div style="display:flex;gap:40px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--gold);text-transform:uppercase">
+      <div><div style="font-size:24px;font-weight:900;color:var(--red);display:block;margin-bottom:3px">1–20</div>Уровни</div>
+      <div><div style="font-size:24px;font-weight:900;color:var(--red);display:block;margin-bottom:3px">3</div>Акта</div>
+      <div><div style="font-size:24px;font-weight:900;color:var(--red);display:block;margin-bottom:3px">20+</div>Сессий</div>
+      <div><div style="font-size:24px;font-weight:900;color:var(--red);display:block;margin-bottom:3px">7</div>Фракций</div>
+    </div>
+    <div style="margin-top:60px;font-size:11px;color:var(--border);letter-spacing:2px;font-family:'Cinzel',serif">D&D 5e · HOMEBREW · ТЁМНОЕ ФЭНТЕЗИ</div>
+  </div>
+</div>
+
+<!-- ════ ВВЕДЕНИЕ ════ -->
+<div class="page" id="page-intro" data-title="Введение" data-part="Начало">
+  <div class="chapter-header">
+    <div class="chapter-eyebrow">Предисловие</div>
+    <div class="chapter-title">О этой книге</div>
+    <div class="chapter-sub">Как использовать · Структура · Условные обозначения</div>
+    <div class="chapter-rule"></div>
+  </div>
+
+  <p class="dropcap">Варнтал — это история о лжи. О лжи настолько старой, что стала частью мироздания. О людях, которые солгали во благо — и о тех, кто три тысячелетия платит за чужой выбор. Это кампания, в которой нет простых злодеев. Есть только убеждения — и их последствия.</p>
+
+  <p>Эта книга содержит полный сценарий кампании для Мастера. Она не предназначена для игроков — здесь хранятся секреты, которые игроки должны открыть сами, через игру, через выборы, через последствия.</p>
+
+  <h2>Как читать эту книгу</h2>
+
+  <p>Книга разделена на три Акта плюс вспомогательные главы. Каждый Акт состоит из сессий — но это не жёсткое расписание. Темп кампании зависит от группы. Некоторые группы пройдут Акт I за три сессии, другим понадобится семь.</p>
+
+  <div class="tip-box"><div class="tip-text">Читай каждую главу за 1–2 дня до сессии, не раньше. Детали свежие в памяти важнее идеальной подготовки.</div></div>
+
+  <h3>Условные обозначения</h3>
+
+  <div class="info-table-wrap" style="margin:14px 0">
+    <table class="info-table">
+      <tr><td>Зелёная рамка</td><td>Совет Мастера — подсказки по ведению сцены</td></tr>
+      <tr><td>Красная рамка</td><td>Секрет Мастера — информация скрытая от игроков</td></tr>
+      <tr><td>Золотая рамка</td><td>Зачитать вслух — текст для игроков</td></tr>
+      <tr><td>Таблица Выборов</td><td>Развилка сюжета с последствиями каждого пути</td></tr>
+      <tr><td>Статблок</td><td>Полные механические данные существа</td></tr>
+      <tr><td>DC XX</td><td>Сложность проверки навыка</td></tr>
+    </table>
+  </div>
+
+  <h2>Главная тайна кампании</h2>
+
+  <div class="secret-box">
+    <div class="secret-text">«Молчание Небес» — не война богов и не природная катастрофа. Это переворот. 3000 лет назад маги во главе с Вэйлом Корном запечатали восьмерых Первозданных — не потому что те угрожали миру, а чтобы монополизировать магию. Вэйл Корн выжил как побочный эффект ритуала. Три тысячи лет. Без сомнений. Он искренне считает, что спас мир.
+
+Эту правду игроки узнают в Акте III. Но улики разбросаны с первой сессии. Мастер никогда не произносит эту тайну напрямую — только через находки, NPC и последствия выборов.</div>
+  </div>
+
+  <h2>Три темы кампании</h2>
+
+  <p><strong>Ложь во благо.</strong> Каждый злодей этой кампании действовал из лучших побуждений. Тюремщик Вэйл Корн не безумец — он убеждённый человек. Понять его мотивацию важнее, чем его победить.</p>
+
+  <p><strong>Цена выбора.</strong> Каждое решение партии имеет последствия. Нет правильных ответов — есть только разные цены. Мастер обязан показывать последствия, даже когда это неудобно.</p>
+
+  <p><strong>Что такое власть.</strong> Кто имеет право контролировать магию? Жизнь? Смерть? Память? Безымянный не просит свободы — он просит справедливости. Разница важна.</p>
+
+  <div class="ornament">✦ ✦ ✦</div>
+
+  <div class="pull-quote">
+    Сила не приходит с уровнями. Она приходит с выборами.
+    <span class="pq-attr">— Девиз кампании</span>
+  </div>
+</div>
+
+<!-- ════ МИР ════ -->
+<div class="page" id="page-world" data-title="Мир Варнтал" data-part="Начало">
+  <div class="chapter-header">
+    <div class="chapter-eyebrow">Глава первая</div>
+    <div class="chapter-title">Мир Варнтал</div>
+    <div class="chapter-sub">Космология · Три уровня · Ключевые места · Фракции</div>
+    <div class="chapter-rule"></div>
+  </div>
+
+  <p class="dropcap">Варнтал означает «между вздохами» на языке дроу. Мир существует в паузе — между тем, что было, и тем, чем может стать. Три тысячи лет назад в эту паузу вошли все и никто не знает как выйти.</p>
+
+  <h2>Три уровня мира</h2>
+
+  <table class="info-table">
+    <tr><td>Надмирье</td><td>Поверхность. Города, поля, горы, Великая Война. Там где живёт большинство разумных существ и где начинается кампания.</td></tr>
+    <tr><td>Подземье</td><td>Underdark. Мир под поверхностью. Дроу, иллитиды, Дварфы в глубоких шахтах. Другие правила. Другая мораль.</td></tr>
+    <tr><td>Глубь</td><td>Первобытное пространство. Там где живут — или были заперты — Первозданные. Нет времени. Нет гравитации. Нет привычной логики.</td></tr>
+  </table>
+
+  <h2>Четыре Осколка Первозданных</h2>
+
+  <p>Когда Первозданных запечатали, четверо из восьми не были полностью уничтожены — они рассыпались на Осколки. Осколки стали источниками магии мира. Вокруг них строится вся кампания.</p>
+
+  <table class="info-table">
+    <tr><td>Кость Дур-Тха</td><td>Некромантия / жизнь / смерть. Под Грейхоллом, в Гробнице Безымянного. Акт I.</td></tr>
+    <tr><td>Тишь Валейн</td><td>Иллюзии / разум / память. Зеркальное озеро в Подземье. Акт II.</td></tr>
+    <tr><td>Зов Этории</td><td>Призывы / порталы / связь. Архив Астерры (скрыт). Акт II–III.</td></tr>
+    <tr><td>Пламень Аш'ора</td><td>Огонь / разрушение / воля. Вулкан на севере. У дракона Аш'Валина. Акт III.</td></tr>
+  </table>
+
+  <h2>Семь фракций</h2>
+
+  <p>Каждая фракция имеет публичные цели — то, что они говорят открыто — и тайные планы, о которых знает только Мастер. Репутация партии у каждой фракции (от −3 до +3) влияет на доступные варианты, цены и союзников.</p>
+
+  <h3><span class="faction-badge" style="color:#c9a84c;border-color:#c9a84c">👑 Союз Пяти Корон</span></h3>
+  <p>Официальная власть. Контролирует поверхность. <em>Публично:</em> выиграть войну, защитить магию. <em>Тайно:</em> скрыть правду о Гробнице, которую знают 500 лет. Если правда выйдет — легитимность рухнет.</p>
+
+  <h3><span class="faction-badge" style="color:#9a50cc;border-color:#9a50cc">🕷️ Паутина</span></h3>
+  <p>Подземная теократия дроу. <em>Публично:</em> выход на поверхность, уничтожение Союза. <em>Тайно:</em> Зел'харра знает, что Мать-Паучиха — это Осколок Валейн, не бог. Вся её власть стоит на этой лжи.</p>
+
+  <h3><span class="faction-badge" style="color:#cc4a10;border-color:#cc4a10">🔥 Пепельный Легион</span></h3>
+  <p>Армия тифлингов. <em>Публично:</em> признание и суверенитет. <em>Тайно:</em> Эрик Дальн хочет мира любой ценой. Слышит демонический шёпот — молчит. Война была провокацией Роя.</p>
+
+  <h3><span class="faction-badge" style="color:#cc2020;border-color:#cc2020">🌙 Ночные Дома</span></h3>
+  <p>Вампирский синдикат. <em>Публично:</em> легализация, информационная монополия. <em>Тайно:</em> ждут пока все истощат друг друга. Леди Вейра ищет своего создателя — Сарвэна.</p>
+
+  <h3><span class="faction-badge" style="color:#9a8040;border-color:#9a8040">⛏️ Каменная Присяга</span></h3>
+  <p>Дварфийский клан. <em>Публично:</em> нейтралитет, контроль Хребта. <em>Тайно:</em> Торин знает что на 4-м уровне шахты. Заблокированная страница летописи — имя Безымянного. Кто заблокировал?</p>
+
+  <h3><span class="faction-badge" style="color:#4040cc;border-color:#4040cc">🧠 Рой Иллитидов</span></h3>
+  <p>Колония иллитидов. <em>Цели:</em> достроить Мозговой Бастион и поглотить Безымянного. Пока фракции воюют — Рой растёт незамеченным. Строго говоря, не злодеи — просто считают индивидуальность неэффективной.</p>
+
+  <h3><span class="faction-badge" style="color:#cc2030;border-color:#cc2030">🧛 Сарвэн</span></h3>
+  <p>Первый вампир. 4000 лет. Не фракция — сила. Видел Молчание Небес лично. Ждёт тех, кто готов принять правду. Это — партия.</p>
+</div>
+
+<!-- ════ АКТ I ════ -->
+<div class="page" id="page-act1" data-title="АКТ I — Обзор" data-part="Акт I">
+  <div class="act-banner" data-act="I" style="color:var(--act1);border-color:rgba(139,21,0,.3)">
+    <div class="act-banner-label">Акт первый</div>
+    <div class="act-banner-title">Катакомбы Грейхолла</div>
+    <div class="act-banner-levels">Уровни 1–5 · 5–7 сессий · Грейхолл и три уровня катакомб</div>
+    <div class="act-banner-desc">История о том, как группа незнакомцев становится командой, погружаясь в тайну, которая больше их самих. Начинается с простого задания. Заканчивается выбором, который изменит весь Варнтал.</div>
+  </div>
+
+  <h2>Три слоя истории</h2>
+  <table class="info-table">
+    <tr><td>Поверхностный</td><td>Найти пропавших картографов. Казалось бы — простой квест за деньги.</td></tr>
+    <tr><td>Средний</td><td>Кто-то намеренно направил картографов туда. И теперь направляет партию. Тессир Кол — не тот, кем кажется.</td></tr>
+    <tr><td>Глубинный</td><td>Под Грейхоллом спит нечто, что не должно просыпаться — и кто-то хочет обратного.</td></tr>
+  </table>
+
+  <h2>Скрытые нити Акта I</h2>
+  <div class="secret-box">
+    <div class="secret-text">
+      <strong>Нить 1 — Двойной агент:</strong> Тессир работает на двух нанимателей. Один — Вейра (Ночные Дома). Второй — советник Архимага Мэйн, который сам не знает, что служит Тюремщику 200 лет.<br><br>
+      <strong>Нить 2 — Велис и Грум:</strong> Инквизитор Велис и Дед Грум спускались в катакомбы 15 лет назад вместе. Велис бросил Грума на третьем уровне и сам нарушил руны ради карьеры. Грум знает — молчит из страха.<br><br>
+      <strong>Нить 3 — Сны Безымянного:</strong> Безымянный уже говорил с одним персонажем во снах до начала кампании. Этот персонаж принимал сны за обычные. Мастер выбирает — кому.<br><br>
+      <strong>Нить 4 — Кровь Белова:</strong> Картограф Белов — потомок последнего жреца Безымянного. Кровная связь через 3000 лет. Тессир знал и намеренно включил его в экспедицию. Белов был ключом, не жертвой.<br><br>
+      <strong>Нить 5 — Агент Паутины:</strong> Один из NPC Грейхолла — агент Паутины. Рекомендация: бандит Курт или торговец картами. Восприятие DC 20 при разговоре.
+    </div>
+  </div>
+
+  <h2>Структура Акта I</h2>
+  <table class="info-table">
+    <tr><td>Сессия 1</td><td>Грейхолл. Знакомство. Тессир. Дед Грум. Первый выбор.</td></tr>
+    <tr><td>Сессия 2</td><td>Расследование или сразу спуск. Уровень 1 — Старый город.</td></tr>
+    <tr><td>Сессия 3</td><td>Уровень 2 — Храм культа. Мумии. Фрагменты рун.</td></tr>
+    <tr><td>Сессия 4</td><td>Уровень 3 — Гробница. Встреча с Каэлом. Осколок.</td></tr>
+    <tr><td>Сессия 5</td><td>Возвращение. Тессир. Реакция фракций. Финал акта.</td></tr>
+    <tr><td>Сессия 6–7</td><td>Опционально: расследование Тессира, квесты в городе.</td></tr>
+  </table>
+</div>
+
+<!-- ════ СЕССИЯ 1 ════ -->
+<div class="page" id="page-s1" data-title="Сессия 1: Тухлый Якорь" data-part="Акт I">
+  <div class="session-banner">
+    <div class="session-num">1</div>
+    <div class="session-info">
+      <div class="session-label">Сессия первая</div>
+      <div class="session-title">«Тухлый Якорь»</div>
+      <div class="session-hook">Первый контакт с миром · Знакомство · Завязка · Уровень 1</div>
+    </div>
+  </div>
+
+  <p>Первая сессия — знакомство, атмосфера и завязка. Здесь нет большого боя. Цель Мастера: влюбить игроков в мир и дать им первые зацепки. Дай игрокам пять минут на первое взаимодействие между собой — не торопи.</p>
+
+  <div class="scene-header">
+    <div class="scene-num">1.1</div>
+    <div class="scene-title">Прибытие в Грейхолл</div>
+    <div class="scene-type" style="color:var(--gold);border-color:var(--gold)">Атмосфера</div>
+  </div>
+
+  <div class="atm-box">
+    <div class="atm-text">Грейхолл встречает вас запахом соли, рыбы и чего-то горелого — последнее тянется откуда-то из-под земли, как будто город стоит на тлеющих углях.<br><br>
+    Портовый квартал кишит людьми, которые смотрят в сторону — никогда прямо. Стражники на каждом углу носят знак Союза Пяти Корон. Где-то в доках ругаются на эльфийском. Высоко над головой, на шпиле старой башни, раскачивается фонарь с вырезанной паутиной внутри.<br><br>
+    Вы незнакомы друг другу. Но всех вас ждёт одно место — трактир «Тухлый Якорь» в старом квартале.</div>
+  </div>
+
+  <div class="tip-box"><div class="tip-text">После зачтения дай 5 минут на свободное взаимодействие: где персонажи познакомились или почему оказались в одном трактире. Первые отношения между персонажами важнее любой сюжетной информации.</div></div>
+
+  <h3>Что можно исследовать в Грейхолле</h3>
+  <table class="check-table">
+    <tr><th>Место</th><th>Что найти</th><th>Проверка</th></tr>
+    <tr><td>Портовый квартал</td><td>Ящики с печатью паутины у Дока №7. Информаторы Ночных Домов.</td><td>Наблюдательность DC 14</td></tr>
+    <tr><td>Рыночная площадь</td><td>Слухи о пропавших картографах. Торговец картами нервничает.</td><td>Расследование DC 12</td></tr>
+    <tr><td>Старый квартал</td><td>Трещины в брусчатке идут вниз. Холоднее чем должно быть.</td><td>Пассивное Восприятие 12</td></tr>
+    <tr><td>Цитадель стражи</td><td>Капитан Мирра официально отрицает пропажу. Неофициально — знает.</td><td>Проницательность DC 15</td></tr>
+  </table>
+
+  <div class="scene-header">
+    <div class="scene-num">1.2</div>
+    <div class="scene-title">Встреча с Тессиром Колом</div>
+    <div class="scene-type" style="color:var(--red);border-color:var(--red)">Ключевая сцена</div>
+  </div>
+
+  <p>Тессир находит партию сам — за ужином в «Тухлом Якоре». Садится рядом без приглашения, заказывает вино для всех и улыбается так, будто они старые друзья. Он обаятелен, вежлив и лжёт профессионально.</p>
+
+  <div class="dialog-box">
+    <div class="dialog-speaker"><span class="dialog-speaker-emoji">📜</span>Тессир Кол — первое знакомство</div>
+    <div class="dialog-lines">
+      <div class="dialog-line">Прошу прощения за бесцеремонность. Меня зовут Тессир. Нотариус. Совершенно скучная профессия — если бы не задания вроде этого.</div>
+      <div class="dialog-line">Семь картографов спустились в катакомбы под старым кварталом три недели назад. Официальный заказ Совета Магов — составить карту нижних уровней. Ни один не вернулся.</div>
+      <div class="dialog-line">Я предлагаю каждому из вас по двести золотых — просто за то, чтобы спуститься и выяснить что произошло. Если найдёте карты или выживших — вдвое больше.</div>
+      <div class="dialog-line">Простое задание. Хорошая плата. Никаких вопросов.</div>
+    </div>
+    <div class="dialog-note">Последнюю фразу произносит именно тогда, когда игроки начинают задавать вопросы. Улыбка не гаснет.</div>
+  </div>
+
+  <h3>Проверки при разговоре с Тессиром</h3>
+  <table class="check-table">
+    <tr><th>Проверка</th><th>Результат</th></tr>
+    <tr><td class="check-skill">Проницательность DC 14</td><td>Тессир лжёт о чём-то конкретном. Пауза перед словом «Совета» — слишком заметная.</td></tr>
+    <tr><td class="check-skill">Проницательность DC 18</td><td>Когда упоминает катакомбы — на долю секунды взгляд падает вниз. Не туда, где подвал. Гораздо глубже.</td></tr>
+    <tr><td class="check-skill">История DC 12</td><td>Совет Магов не нанимает нотариусов для таких поручений. Это не их стиль.</td></tr>
+    <tr><td class="check-skill">Харизма (Убеждение) DC 15</td><td>Тессир признаёт: «Да, есть небольшие детали которые я опустил. Но это не меняет задания.» Больше не говорит ничего.</td></tr>
+  </table>
+
+  <div class="scene-header">
+    <div class="scene-num">1.3</div>
+    <div class="scene-title">Разговор с Дедом Грумом</div>
+    <div class="scene-type" style="color:#2a7a3a;border-color:#2a7a3a">Откровение</div>
+  </div>
+
+  <p>Грум подходит убирать стол после ухода Тессира. Если партия завяжет разговор — уклоняется. Но если потратить время, проявить терпение и участие (Харизма DC 14 или просто не торопить):</p>
+
+  <div class="dialog-box">
+    <div class="dialog-speaker"><span class="dialog-speaker-emoji">🍺</span>Дед Грум — когда его разговорили</div>
+    <div class="dialog-lines">
+      <div class="dialog-line">Тессир приходит сюда уже третий месяц. Всегда один. Всегда смотрит вниз когда думает, что никто не видит.</div>
+      <div class="dialog-line">Я был картографом. Давно. Спускался в те же катакомбы пятнадцать лет назад. Нас было восемь. Вернулся один. Это был я.</div>
+      <div class="dialog-line">(долгая пауза) Там есть третий уровень. Его нет ни на одной карте — потому что я сжёг все карты. То, что там... это не должно было существовать.</div>
+      <div class="dialog-line">(тихо) Если вы всё-таки пойдёте — не открывайте запечатанную дверь на третьем уровне. Что бы вы там ни услышали.</div>
+    </div>
+    <div class="dialog-note">Произносит последнюю фразу и уходит. Не оглядывается. Если догнать — говорит только «Доброй ночи» и исчезает на кухне.</div>
+  </div>
+
+  <div class="secret-box">
+    <div class="secret-text">Грум видел Тессира в катакомбах 15 лет назад — тот был внутри Гробницы. Грум не знал тогда его имени. Сейчас знает — и молчит из страха. Второй человек в той экспедиции — Инквизитор Велис. Он бросил Грума на третьем уровне и сам разрушил часть рун печати ради ускорения карьеры.</div>
+  </div>
+
+  <div class="scene-header">
+    <div class="scene-num">1.4</div>
+    <div class="scene-title">Первый выбор: принять задание?</div>
+    <div class="scene-type" style="color:#8B6914;border-color:#8B6914">Выбор</div>
+  </div>
+
+  <div class="choice-box">
+    <div class="choice-title">Развилка сюжета</div>
+    <div class="choice-q">Партия принимает задание Тессира?</div>
+    <div class="choice-option">
+      <div class="co-arrow co-yes">▸</div>
+      <div class="co-body">
+        <div class="co-head">Принять за деньги</div>
+        <div class="co-detail">Тессир доволен. Утром даёт официальный документ и ключ от люка в старом квартале. Всё по плану.</div>
+        <div class="co-effect">→ Стандартный путь. Репутация нейтральна у всех фракций.</div>
+      </div>
+    </div>
+    <div class="choice-option">
+      <div class="co-arrow co-alt">▸</div>
+      <div class="co-body">
+        <div class="co-head">Принять, но расследовать Тессира сначала</div>
+        <div class="co-detail">Займёт часть Сессии 2. Откроет ранние связи с Ночными Домами. Если следить: он встречается с Леди Вейрой у Дока №7.</div>
+        <div class="co-effect">→ +50 ОХ за проактивность. Ранний доступ к информации о двойной игре.</div>
+      </div>
+    </div>
+    <div class="choice-option">
+      <div class="co-arrow co-no">▸</div>
+      <div class="co-body">
+        <div class="co-head">Отказаться полностью</div>
+        <div class="co-detail">Тессир уходит без слова. На следующее утро кто-то взламывает комнату одного из персонажей. Ничего не пропало — но ясно, что за ними наблюдают.</div>
+        <div class="co-effect">→ Репутация Ночных Домов −1. Тессир помечает партию как «неудобных». Путь в катакомбы через Грума (DC 18) или через рыбный рынок.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ СЕССИЯ 2 ════ -->
+<div class="page" id="page-s2" data-title="Сессия 2: Первый спуск" data-part="Акт I">
+  <div class="session-banner">
+    <div class="session-num">2</div>
+    <div class="session-info">
+      <div class="session-label">Сессия вторая</div>
+      <div class="session-title">Первый Спуск</div>
+      <div class="session-hook">Уровень 1 катакомб · Старый погребённый город · Нежить · Первые улики</div>
+    </div>
+  </div>
+
+  <div class="scene-header">
+    <div class="scene-num">2.1</div>
+    <div class="scene-title">Вход в катакомбы</div>
+    <div class="scene-type" style="color:var(--gold);border-color:var(--gold)">Атмосфера</div>
+  </div>
+
+  <div class="atm-box">
+    <div class="atm-text">Люк ведёт в темноту, которая пахнет иначе, чем любая темнота на поверхности. Не просто сырость и земля — что-то ещё. Что-то, у чего нет названия, но которое вы чувствуете задней частью горла.<br><br>
+    Первый уровень — это старый город. Мостовые, фундаменты домов, фрагменты вывесок на языке который никто уже не помнит. Когда-то здесь жили люди. Теперь — только следы.</div>
+  </div>
+
+  <div class="tip-box"><div class="tip-text">Уровень 1 — разведочный. Игроки учатся работать вместе. Опасность умеренная, но атмосфера нагнетается с каждой комнатой. Не торопись к бою — дай им исследовать.</div></div>
+
+  <div class="scene-header">
+    <div class="scene-num">2.2</div>
+    <div class="scene-title">Перекрёсток Теней</div>
+    <div class="scene-type" style="color:var(--red);border-color:var(--red)">Бой / Исследование</div>
+  </div>
+
+  <p>Четыре направления. На стенах — следы борьбы. Медицина DC 11: не людской урон — когти. Три тела картографов — уже нежить (3 зомби, CR 1/4 каждый).</p>
+
+  <p>При победе: один из зомби одет в форму Совета Магов. В его кармане — сломанный карандаш и клочок бумаги: <em>«Белов слышит голос снизу. Говорит что это бог. Мы идём дальше.»</em></p>
+
+  <div class="scene-header">
+    <div class="scene-num">2.3</div>
+    <div class="scene-title">Разрушенный магазин — Дневник</div>
+    <div class="scene-type" style="color:#2a5a8a;border-color:#2a5a8a">Информация</div>
+  </div>
+
+  <p>Полки, монеты, сломанный сундук. Расследование DC 12: в щели под прилавком — дневник картографа. Последняя запись (три недели назад):</p>
+
+  <div class="atm-box" style="border-left-color:#2a5a8a">
+    <div class="atm-text" style="font-style:normal">«День 4. Мы нашли дверь с символом которого нет ни в одной книге. Белов хочет открыть. Мы с Анной против. Он говорит что слышит голос изнутри — голос который знает его имя. Завтра решаем. Если Белов прав — это открытие века. Если нет... Молюсь Первым. Хотя они давно молчат.»</div>
+  </div>
+
+  <div class="scene-header">
+    <div class="scene-num">2.4</div>
+    <div class="scene-title">Колодец</div>
+    <div class="scene-type" style="color:var(--act3);border-color:var(--act3)">Мистика</div>
+  </div>
+
+  <p>Сухой колодец в центре старой площади. Наблюдательность DC 14: на дне — слабое фиолетовое свечение. Магия тайн DC 15: это не обычная магия. Это что-то первичное — старше любой школы.</p>
+
+  <p>Если бросить монету: через три секунды — никакого звука. Монета не упала. Или упала слишком далеко.</p>
+
+  <div class="secret-box">
+    <div class="secret-text">Это первый отголосок Осколка Кости Дур-Тха. Его влияние достигает уровня 1. Персонаж с наибольшей чувствительностью к некромантии (если есть) ощущает лёгкое притяжение вниз — как будто что-то зовёт.</div>
+  </div>
+
+  <div class="scene-header">
+    <div class="scene-num">2.5</div>
+    <div class="scene-title">Бандиты — Бандит Курт</div>
+    <div class="scene-type" style="color:var(--gold);border-color:var(--gold)">Социальная встреча</div>
+  </div>
+
+  <p>Трое бандитов-мародёров за укреплённой баррикадой из мебели. Враждебны на вид — но явно напуганы. Если партия не атакует первой и предлагает разговор:</p>
+
+  <div class="dialog-box">
+    <div class="dialog-speaker"><span class="dialog-speaker-emoji">🗡️</span>Бандит Курт — если пощадить</div>
+    <div class="dialog-lines">
+      <div class="dialog-line">Нас нанял нотариус. Тессир. Сказал — просто спуститесь, посмотрите что случилось, вернитесь. Сто золотых каждому.</div>
+      <div class="dialog-line">Мы не первые. Он нанимал уже трижды до нас. Ни одна партия не вернулась. Мы тут сидим четыре дня и боимся выйти.</div>
+      <div class="dialog-line">Там что-то ходит. Ночью. Не нежить — нежить мы слышали. Это что-то другое. Оно не шумит. Оно... чувствуется.</div>
+    </div>
+    <div class="dialog-note">Курт — потенциальный агент Паутины (Мастер решает). Проницательность DC 20 при разговоре.</div>
+  </div>
+
+  <div class="choice-box">
+    <div class="choice-title">Развилка</div>
+    <div class="choice-q">Что делать с бандитами?</div>
+    <div class="choice-option">
+      <div class="co-arrow co-yes">▸</div>
+      <div class="co-body">
+        <div class="co-head">Отпустить с условием</div>
+        <div class="co-detail">Курт рассказывает всё что знает о Тессире. Это четвёртая нанятая партия за год. Список предыдущих — у Тессира в конторе.</div>
+        <div class="co-effect">→ Ключевая информация. +50 ОХ. Курт становится потенциальным свидетелем.</div>
+      </div>
+    </div>
+    <div class="choice-option">
+      <div class="co-arrow co-no">▸</div>
+      <div class="co-body">
+        <div class="co-head">Убить или прогнать</div>
+        <div class="co-detail">Партия теряет важный источник информации о Тессире.</div>
+        <div class="co-effect">→ Пропущена улика. −25 ОХ.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scene-header">
+    <div class="scene-num">2.6</div>
+    <div class="scene-title">Призрак Аны</div>
+    <div class="scene-type" style="color:var(--act3);border-color:var(--act3)">Особая встреча</div>
+  </div>
+
+  <p>В тупиковом переулке — призрак (CR 2). Это Ана, картограф. Умерла от испуга. У неё есть особенность: говорит только стихами. Не намеренно — это следствие смерти. Её слова рифмованы, но информация настоящая.</p>
+
+  <div class="dialog-box">
+    <div class="dialog-speaker"><span class="dialog-speaker-emoji">👻</span>Призрак Аны — говорит стихами</div>
+    <div class="dialog-lines">
+      <div class="dialog-line">Белов ушёл один, на зов, на свет, на голос снизу — говорит, там бог живёт, нас ждёт без укоризны.</div>
+      <div class="dialog-line">Мы ждали пять ночей, мы ждали пять рассветов — он не вернулся к нам, он стал дверей ответом.</div>
+      <div class="dialog-line">Внизу есть имя — имя то, что двери открывает. Кто знает имя Стража — тот живым вниз убегает.</div>
+    </div>
+    <div class="dialog-note">Ана не может объяснить прямо — только через стихи. Если партия терпелива, можно получить намёк на имя Каэла через несколько минут разговора.</div>
+  </div>
+
+  <div class="secret-box">
+    <div class="secret-text">«Имя то, что двери открывает» — намёк на механику Каэла. Произнести его имя (КАЭЛ) перед Стражем = мирный путь. У Аны есть ещё одна информация которую она может передать: «Нотариус был здесь. Раньше нас. Он знал дорогу.»</div>
+  </div>
+</div>
+
+<!-- ════ СЕССИЯ 3 ════ -->
+<div class="page" id="page-s3" data-title="Сессия 3: Храм культа" data-part="Акт I">
+  <div class="session-banner">
+    <div class="session-num">3</div>
+    <div class="session-info">
+      <div class="session-label">Сессия третья</div>
+      <div class="session-title">Храм без Бога</div>
+      <div class="session-hook">Уровень 2 · Древний храм культа · Мумии · Фрагменты имени</div>
+    </div>
+  </div>
+
+  <div class="atm-box">
+    <div class="atm-text">Ступени вниз сделаны из камня другого цвета — почти чёрного, с тонкими прожилками, похожими на вены. Кладка другая. Моложе? Нет — старше. Намного старше.<br><br>
+    На стенах — символы, которых нет ни в одной системе письма, известной магам. Один из них вы уже видели: он был на двери сверху. И на записке картографа. И — если один из вас вспомнит — где-то ещё.</div>
+  </div>
+
+  <h3>Атмосфера уровня 2</h3>
+  <table class="info-table">
+    <tr><td>Освещение</td><td>Нет. Факелы гаснут через 10 минут (DC 13 Телосложения или 1 уровень усталости от холода).</td></tr>
+    <tr><td>Звуки</td><td>Периодически — хоровое пение где-то очень далеко внизу. Это третий уровень.</td></tr>
+    <tr><td>Ощущение</td><td>Маги и жрецы чувствуют лёгкое притяжение вниз — как будто магия здесь тяжелее обычного.</td></tr>
+    <tr><td>Нежить</td><td>Жрецы-мумии патрулируют парами. У каждого — фрагмент рунической надписи. Нужно 5 фрагментов для имени.</td></tr>
+  </table>
+
+  <div class="scene-header">
+    <div class="scene-num">3.1</div>
+    <div class="scene-title">Зал Тишины</div>
+    <div class="scene-type" style="color:var(--gold);border-color:var(--gold)">Исследование</div>
+  </div>
+
+  <div class="atm-box">
+    <div class="atm-text">Огромный зал. Потолок в тридцати футах над головой теряется в темноте. В центре — разрушенная статуя. У неё было восемь лиц. Семь сбиты молотком. Одно — намеренно закрыто тёмной тканью. Кем? Когда?</div>
+  </div>
+
+  <div class="tip-box"><div class="tip-text">Не описывай что под тканью сразу. Только когда игроки сами откроют её. Под тканью — лицо, похожее на человека, но с глазами которых нет ни у одной известной расы. Это не страшно. Это... знакомо. Как будто ты это лицо видел во сне.</div></div>
+
+  <div class="scene-header">
+    <div class="scene-num">3.2</div>
+    <div class="scene-title">Библиотека жрецов</div>
+    <div class="scene-type" style="color:#2a5a8a;border-color:#2a5a8a">Ключевая информация</div>
+  </div>
+
+  <p>Три уцелевших книги из девяноста процентов сгнивших. Расследование DC 14 находит их.</p>
+
+  <table class="info-table">
+    <tr><td>Хроника культа</td><td>На мёртвом языке (Языки DC 20 или Опознание). Культ называл своего бога «Безымянным» намеренно — «имя даёт власть над тем, кто его носит». Существовал 5000 лет назад.</td></tr>
+    <tr><td>Список ритуалов</td><td>Страницы вырваны. Расследование DC 13: пыль свежая — вырвали недавно. Дни, не века. Тессир.</td></tr>
+    <tr><td>Дневник жреца</td><td>На современном языке. Читается без проверки.</td></tr>
+  </table>
+
+  <div class="atm-box" style="border-left-color:#2a5a8a">
+    <div class="atm-text" style="font-style:normal">«Сегодня нас осталось трое. Стражи пришли сверху — не от обычных людей. Они знали имя. Как? Мы запечатали дверь. Мы запечатали себя. Пусть Он спит дальше. Если ты читаешь это — значит нас уже нет. Береги имя. Не произноси его вслух. Не давай им найти — они ищут не бога, они ищут оружие. Имя есть в —»<br><br>
+    Запись обрывается.</div>
+  </div>
+
+  <div class="scene-header">
+    <div class="scene-num">3.3</div>
+    <div class="scene-title">Зал Испытания — три двери</div>
+    <div class="scene-type" style="color:var(--red);border-color:var(--red)">Испытание</div>
+  </div>
+
+  <p>Три двери. Над каждой — надпись на том же мёртвом языке. Жрец-мумия сидит в центре и не атакует. Ждёт.</p>
+
+  <div class="dialog-box">
+    <div class="dialog-speaker"><span class="dialog-speaker-emoji">⚰️</span>Жрец-страж — мумия с разумом</div>
+    <div class="dialog-lines">
+      <div class="dialog-line">...Вы... живые. Давно. Не было живых.</div>
+      <div class="dialog-line">Он... спит. Не будите. Пожалуйста.</div>
+      <div class="dialog-line">Дверь... средняя. Не открывайте правую. Там... то, чем мы стали. Когда перестали верить.</div>
+    </div>
+    <div class="dialog-note">Говорит медленно, с паузами. Каждое слово — усилие. Он помнит кем был. И помнит что потерял.</div>
+  </div>
+
+  <div class="secret-box">
+    <div class="secret-text">Правая дверь ведёт в комнату где 12 жрецов убили друг друга в споре о природе Безымянного 3000 лет назад. Их тени до сих пор воссоздают этот спор — бесконечно. Механически: DC 14 Мудрости или Испуган на 1 минуту. Нет боя, только ужас. Мастер может разыграть спор: один жрец считает Безымянного богом, другой — тюрьмой для чего-то большего. Оба правы.</div>
+  </div>
+
+  <div class="scene-header">
+    <div class="scene-num">3.4</div>
+    <div class="scene-title">Главный бой: Верховный Жрец-Мумия</div>
+    <div class="scene-type" style="color:var(--red);border-color:var(--red)">Бой · CR 5</div>
+  </div>
+
+  <div class="stat-block">
+    <div class="sb-title-bar">
+      <div class="sb-emoji">⚰️</div>
+      <div>
+        <div class="sb-name">Верховный Жрец-Мумия</div>
+        <div class="sb-type">Нежить среднего размера, нейтральное зло</div>
+      </div>
+      <div class="sb-cr">CR 5 · 1800 ОХ</div>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-stats">
+      <div class="sb-stat"><div class="sb-stat-label">Хиты</div><div class="sb-stat-val">82</div></div>
+      <div class="sb-stat"><div class="sb-stat-label">КД</div><div class="sb-stat-val">13</div></div>
+      <div class="sb-stat"><div class="sb-stat-label">Скорость</div><div class="sb-stat-val">20 фт.</div></div>
+    </div>
+    <div class="sb-body">
+      <div class="sb-row"><strong>Характеристики:</strong> СИЛ 16 (+3) · ЛОВ 8 (−1) · ТЕЛ 15 (+2) · ИНТ 6 (−2) · МУД 10 (+0) · ХАР 12 (+1)</div>
+      <div class="sb-row"><strong>Иммунитеты к урону:</strong> некротический; дробящий, колющий, режущий от немагического оружия</div>
+      <div class="sb-row"><strong>Иммунитеты к состояниям:</strong> очарован, испуган, истощён, отравлен, ослеплён, оглушён</div>
+      <div class="sb-row"><strong>Тёмное зрение</strong> 60 фт. · <strong>Чувство жизни</strong> 30 фт.</div>
+      <div class="sb-ability"><strong>Ужасающий вид.</strong> Каждое существо в 30 фт. делает спасбросок Мудрости СЛ 13. При провале — Испуган на 1 минуту.</div>
+      <div class="sb-ability"><strong>Действия:</strong></div>
+      <div class="sb-row">🗡️ <strong>Разлагающийся кулак (×2):</strong> +5 к попаданию, досягаемость 5 фт., цель: 2d6+3 дробящего + 3d6 некротического урона. Цель должна пройти спасбросок Телосложения СЛ 14 или максимум ХП снижается на количество некротического урона.</div>
+      <div class="sb-row">👁️ <strong>Проклинающий взгляд (перезарядка 5–6):</strong> один видимый враг в 30 фт. делает спасбросок Мудрости СЛ 13. Провал: 3d8+3 некротического урона и Скованы на 1 минуту.</div>
+      <div class="sb-ability"><strong>Реакция:</strong></div>
+      <div class="sb-row">💀 <strong>Призыв скелетов (1 раз):</strong> когда снижается до 50% ХП — призывает 2 скелета (CR 1/4) в свободных пространствах рядом.</div>
+      <div class="sb-lore">При поражении шепчет: «...Каэл... его зовут... Каэл...» Это не случайность. Он несёт два фрагмента рунической надписи. Имя Стража — это ключ.</div>
+    </div>
+  </div>
+
+  <div class="choice-box">
+    <div class="choice-title">Альтернативный путь</div>
+    <div class="choice-q">Можно ли избежать боя?</div>
+    <div class="choice-option">
+      <div class="co-arrow co-yes">▸</div>
+      <div class="co-body">
+        <div class="co-head">Диалог вместо боя</div>
+        <div class="co-detail">Харизма DC 15 до начала боя: жрец замедляется, слушает. Назвать его имя (если узнали): мгновенная капитуляция. Он рассказывает историю культа и добровольно отдаёт фрагменты.</div>
+        <div class="co-effect">→ +100 ОХ за мирное решение. «Вы первые живые за тысячу лет, кто не пытался уничтожить нас.»</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ СЕССИЯ 4 ════ -->
+<div class="page" id="page-s4" data-title="Сессия 4: Гробница" data-part="Акт I">
+  <div class="session-banner">
+    <div class="session-num">4</div>
+    <div class="session-info">
+      <div class="session-label">Сессия четвёртая</div>
+      <div class="session-title">Гробница Безымянного</div>
+      <div class="session-hook">Уровень 3 · Встреча с Каэлом · Главный выбор Акта I</div>
+    </div>
+  </div>
+
+  <div class="atm-box">
+    <div class="atm-text">Спуск на третий уровень не такой, как предыдущие. Ступеней нет — только плавный наклон вниз. Стены здесь живые в том смысле, что они тёплые на ощупь. И они дышат — медленно, как спящий великан.<br><br>
+    В конце наклона — зал без потолка. Или потолок есть, но так высоко, что теряется в темноте. В центре — дверь. Она открыта. Распечатана недавно — следы свежей магии на петлях. И рядом с ней — тело.</div>
+  </div>
+
+  <div class="scene-header">
+    <div class="scene-num">4.1</div>
+    <div class="scene-title">Тело Белова у двери</div>
+    <div class="scene-type" style="color:#2a5a8a;border-color:#2a5a8a">Расследование</div>
+  </div>
+
+  <table class="check-table">
+    <tr><th>Проверка</th><th>Результат</th></tr>
+    <tr><td class="check-skill">Медицина DC 14</td><td>Белов мёртв несколько дней. Причина смерти: остановка сердца. Не магия, не яд — чистый ужас. Такое бывает очень редко.</td></tr>
+    <tr><td class="check-skill">Расследование DC 13</td><td>Белов пришёл сюда один — следы одиночные. Дверь открывал не он: следы ещё одного существа, которые уходят изнутри. Ботинки нестандартного размера.</td></tr>
+    <tr><td class="check-skill">Расследование DC 16</td><td>В руке у Белова — клочок бумаги. «Я слышал голос. Он сказал моё имя. Он сказал: иди за ними. Пусть идут за тобой.» Это не почерк Белова.</td></tr>
+  </table>
+
+  <div class="secret-box">
+    <div class="secret-text">Тессир опередил партию на неделю. Он спустился сюда первым, открыл дверь своей магией. Страж позволил — Тессир нёс «послание» от имени Ночных Домов. Страж был обманут. Тессир взял малый Осколок Кости Дур-Тха — кристалл размером с большой палец. Этого достаточно чтобы найти путь в Подземье. Записку написал Безымянный. Он уже говорит с миром.</div>
+  </div>
+
+  <div class="scene-header">
+    <div class="scene-num">4.2</div>
+    <div class="scene-title">Появление Каэла — Стража Гробницы</div>
+    <div class="scene-type" style="color:var(--act3);border-color:var(--act3)">Ключевая встреча</div>
+  </div>
+
+  <div class="atm-box">
+    <div class="atm-text">Он появляется не из двери. Он был в зале всё время. Просто стоял в темноте. И смотрел. Вы не замечали его — потому что тьма вокруг него была правильной тьмой. Живой тьмой.<br><br>
+    Фигура в три метра ростом. Коса из чёрного металла. Доспех, сросшийся с телом или тело, ставшее доспехом — не разобрать. И когда он двигается — никакого звука.</div>
+  </div>
+
+  <div class="dialog-box">
+    <div class="dialog-speaker"><span class="dialog-speaker-emoji">💀</span>Каэл — первые слова</div>
+    <div class="dialog-lines">
+      <div class="dialog-line">Живые. (долгая пауза) Давно не было живых.</div>
+      <div class="dialog-line">Те, что были — они были злы. Или напуганы. Вы...</div>
+      <div class="dialog-line">(наклоняет голову) ...Вы другие. Вы ищете. Не берёте. Не бежите.</div>
+      <div class="dialog-line">Дверь открыта. Это... плохо. Кто-то был здесь. Он солгал мне.</div>
+    </div>
+    <div class="dialog-note">Страж НЕ атакует первым. Если игроки атакуют — бой. Если нет — разговор. Вся сцена строится на выборе партии.</div>
+  </div>
+
+  <div class="choice-box">
+    <div class="choice-title">Главная развилка Акта I</div>
+    <div class="choice-q">Бой или диалог с Каэлом?</div>
+    <div class="choice-option">
+      <div class="co-arrow co-yes">▸</div>
+      <div class="co-body">
+        <div class="co-head">Путь диалога — DC 16 или произнести «КАЭЛ»</div>
+        <div class="co-detail">Произнести имя «Каэл» = мгновенный успех. Страж замирает на 1 раунд, потом опускает косу. Харизма DC 16 = он открывается. Он рассказывает всё: настоящее имя Безымянного (шёпотом, одному персонажу), что взял Тессир, скрытый проход на северо-восток.</div>
+        <div class="co-effect">→ +300 ОХ каждому. Каэл как потенциальный союзник в Актах II–III. Имя Безымянного — АШ'ВЭЙ.</div>
+      </div>
+    </div>
+    <div class="choice-option">
+      <div class="co-arrow co-no">▸</div>
+      <div class="co-body">
+        <div class="co-head">Путь боя — три фазы</div>
+        <div class="co-detail">CR 13. HP 210. AC 17. Фаза I: медленный, атакует только при атаке. Фаза II: аура страха, скелеты. Фаза III: светится, все атаки магические. При 0 ХП: «Он проснётся... без разрешения...»</div>
+        <div class="co-effect">→ +200 ОХ. Гробница открывается сама. Меньше информации. Каэл погибает с предупреждением.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-box">
+    <div class="dialog-speaker"><span class="dialog-speaker-emoji">💀</span>Каэл — если убедили</div>
+    <div class="dialog-lines">
+      <div class="dialog-line">Каэл. (очень долгая пауза. Страж опускает косу.) Я... помню это слово. Это... было моим именем.</div>
+      <div class="dialog-line">Три тысячи лет. Я думал что забыл. Но нет. Я просто... ждал.</div>
+      <div class="dialog-line">Тот, кто солгал мне. Он хотел войти внутрь. Он взял кое-что. Небольшое. Но важное. Фрагмент. Осколок.</div>
+      <div class="dialog-line">(поднимает взгляд) Вы хотите знать о Безымянном? Я расскажу. У меня нет причин больше скрывать. Тайна уже вышла.</div>
+    </div>
+  </div>
+
+  <div class="secret-box">
+    <div class="secret-text">Каэл произносит имя Безымянного только одному персонажу, тихо, отдельно: АШ'ВЭЙ. «Я скажу тебе на ухо, один. Это не для всех ушей сразу. Имена имеют вес.» Именно этот персонаж будет чувствовать присутствие Безымянного острее других в Актах II и III.</div>
+  </div>
+
+  <div class="scene-header">
+    <div class="scene-num">4.3</div>
+    <div class="scene-title">Внутри Гробницы</div>
+    <div class="scene-type" style="color:var(--gold);border-color:var(--gold)">Атмосфера</div>
+  </div>
+
+  <div class="atm-box">
+    <div class="atm-text">Внутри Гробницы нет саркофага. Нет тела. Только огромный пустой зал, в центре которого — ниша в форме человека, врезанная в стену. Ниша пуста. Но в воздухе вокруг неё остаётся след тепла, как после живого существа.<br><br>
+    На полу — круг рун. Часть из них разрушена. Намеренно. На каждом разрушенном символе — отпечаток пальца. Человеческого. Свежего.</div>
+  </div>
+
+  <div class="scene-header">
+    <div class="scene-num">4.4</div>
+    <div class="scene-title">Осколок Кости Дур-Тха</div>
+    <div class="scene-type" style="color:var(--act3);border-color:var(--act3)">Ключевой выбор</div>
+  </div>
+
+  <p>В нише — Осколок Кости Дур-Тха. Кристалл размером с кулак. Чёрный. Тёплый. Пульсирует раз в десять секунд — как сердцебиение. Тессир взял один — поменьше. Этот — основной.</p>
+
+  <div class="choice-box">
+    <div class="choice-title">Главный выбор Акта I — нет правильного ответа</div>
+    <div class="choice-q">Что делать с Осколком?</div>
+    <div class="choice-option">
+      <div class="co-arrow co-yes">▸</div>
+      <div class="co-body">
+        <div class="co-head">Оставить себе — настроиться</div>
+        <div class="co-detail">Получить силы Осколка: видеть мертвецов, командовать нежитью 1 раз/день, +2 к некромантическим заклинаниям.</div>
+        <div class="co-effect">→ Иллитиды начнут охоту в Акте II. Каждую ночь — сны умерших. Рой знает где Осколок.</div>
+      </div>
+    </div>
+    <div class="choice-option">
+      <div class="co-arrow co-alt">▸</div>
+      <div class="co-body">
+        <div class="co-head">Вернуть в Гробницу — отдать Каэлу</div>
+        <div class="co-detail">Страж доволен. Путь в Подземье через скрытый проход остаётся открытым.</div>
+        <div class="co-effect">→ Лучший долгосрочный вариант. Каэл как постоянный союзник. Иллитиды не знают.</div>
+      </div>
+    </div>
+    <div class="choice-option">
+      <div class="co-arrow co-alt">▸</div>
+      <div class="co-body">
+        <div class="co-head">Продать фракции</div>
+        <div class="co-detail">Союз: 2000 зм, использует как оружие. Ночные Дома: 3000 зм, цели неизвестны. Дварфы: союз без денег.</div>
+        <div class="co-effect">→ Деньги сейчас — непредсказуемые последствия в Акте II. Осколок попадёт не в те руки.</div>
+      </div>
+    </div>
+    <div class="choice-option">
+      <div class="co-arrow co-no">▸</div>
+      <div class="co-body">
+        <div class="co-head">Изучить и спрятать тайно</div>
+        <div class="co-detail">Маг/Чародей получает Осколочный Резонанс. Местонахождение — тайна партии.</div>
+        <div class="co-effect">→ Лучший баланс сил. Осколок как козырь. Но кто-то будет искать — и найдёт.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ СЕССИЯ 5 ════ -->
+<div class="page" id="page-s5" data-title="Сессия 5: Финал Акта I" data-part="Акт I">
+  <div class="session-banner">
+    <div class="session-num">5</div>
+    <div class="session-info">
+      <div class="session-label">Сессия пятая</div>
+      <div class="session-title">Возвращение и «Наконец»</div>
+      <div class="session-hook">Реакция фракций · Тессир · Финальная сцена · Переход к Акту II</div>
+    </div>
+  </div>
+
+  <div class="scene-header">
+    <div class="scene-num">5.1</div>
+    <div class="scene-title">Тессир ждёт у выхода</div>
+    <div class="scene-type" style="color:var(--red);border-color:var(--red)">Ключевая встреча</div>
+  </div>
+
+  <p>Тессир стоит у люка. Он знал когда они вернутся. Он улыбается.</p>
+
+  <div class="dialog-box">
+    <div class="dialog-speaker"><span class="dialog-speaker-emoji">📜</span>Тессир Кол — встреча после катакомб</div>
+    <div class="dialog-lines">
+      <div class="dialog-line">Вы вернулись. Все. Это редкость. Примите мои искренние поздравления.</div>
+      <div class="dialog-line">(взгляд на Осколок, если виден) Ах. Вы его нашли. Превосходно. Именно это мне и нужно было узнать — что он там.</div>
+      <div class="dialog-line">Не волнуйтесь. Я не собираюсь его забирать. Мне достаточно знать, что он существует. Остальное... приложится.</div>
+      <div class="dialog-line">(при попытке задержать его) Вы сделали всё что я просил. Получите оплату у моего помощника. Было приятно работать вместе.</div>
+    </div>
+  </div>
+
+  <div class="choice-box">
+    <div class="choice-title">Развилка</div>
+    <div class="choice-q">Что делают с Тессиром?</div>
+    <div class="choice-option">
+      <div class="co-arrow co-yes">▸</div>
+      <div class="co-body">
+        <div class="co-head">Отпустить</div>
+        <div class="co-detail">Деньги выплачены. В Акте II Тессир уже в Подземье — добрался раньше партии.</div>
+        <div class="co-effect">→ Репутация Ночных Домов +1 автоматически. Вейра слышала всё.</div>
+      </div>
+    </div>
+    <div class="choice-option">
+      <div class="co-arrow co-alt">▸</div>
+      <div class="co-body">
+        <div class="co-head">Следить тайно (Скрытность DC 15)</div>
+        <div class="co-detail">Идёт к Доку №7. Встречается с Вейрой. Передаёт записку. Они расходятся без слов.</div>
+        <div class="co-effect">→ +75 ОХ. Связь Тессир-Вейра установлена. Ключ к пониманию двойной игры.</div>
+      </div>
+    </div>
+    <div class="choice-option">
+      <div class="co-arrow co-no">▸</div>
+      <div class="co-body">
+        <div class="co-head">Задержать силой</div>
+        <div class="co-detail">Невидимость и побег. В кармане падает клочок — фрагмент карты катакомб глубже того что видели.</div>
+        <div class="co-effect">→ Репутация Ночных Домов −1. Но карта — ценный предмет для Акта II.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scene-header">
+    <div class="scene-num">5.2</div>
+    <div class="scene-title">Реакция фракций</div>
+    <div class="scene-type" style="color:#2a5a8a;border-color:#2a5a8a">Последствия</div>
+  </div>
+
+  <table class="info-table">
+    <tr><td>Союз Пяти Корон</td><td>Инквизитор прислан «с вопросами». Вежлив. Требует официальный отчёт о катакомбах. Если партия упоминает Гробницу — его лицо не меняется. Но следующей ночью за ними следят.</td></tr>
+    <tr><td>Ночные Дома</td><td>Вейра присылает приглашение на «деловой ужин». Приписка: «Мы знаем что вы нашли. Мы можем это защитить.»</td></tr>
+    <tr><td>Каменная Присяга</td><td>Гонец от Торина Камнеклятого: «Дварфы слышали о событиях под Грейхоллом. Железный Хребет открыт для вас.»</td></tr>
+    <tr><td>Пепельный Легион</td><td>В порту стоит корабль с флагом Легиона. Не разгружается. Просто стоит. И наблюдает.</td></tr>
+    <tr><td>Паутина</td><td>Тишина. Дроу всегда молчат — до определённого момента.</td></tr>
+  </table>
+
+  <div class="scene-header">
+    <div class="scene-num">5.3</div>
+    <div class="scene-title">Финальная сцена Акта I</div>
+    <div class="scene-type" style="color:var(--act3);border-color:var(--act3)">Финал</div>
+  </div>
+
+  <div class="atm-box">
+    <div class="atm-text">Ночью, пока партия спит, далеко под Грейхоллом в пустой нише Гробницы появляется слабое свечение. Не магическое. Что-то теплее. Живее.<br><br>
+    Если кто-то из персонажей видит сны в эту ночь — они слышат одно слово. Не имя, не приказ. Просто слово:</div>
+  </div>
+
+  <div class="pull-quote">
+    «Наконец.»
+    <span class="pq-attr">— Безымянный (Аш'Вэй) · Первозданный · Запечатан 3000 лет</span>
+  </div>
+
+  <div class="atm-box">
+    <div class="atm-text">Утром в городе находят новое тело. Это Инквизитор Велис. Без следов борьбы. Лицо — спокойное. В руке — клочок бумаги с именем одного из игроков.</div>
+  </div>
+
+  <div class="secret-box">
+    <div class="secret-text">Велис умер от страха — как Белов. Безымянный показал ему правду о том, что он сделал 15 лет назад. Его вина настигла его в виде воспоминания. Имя игрока в руке — это не угроза. Это признание. Безымянный выбрал «ключевого» персонажа — того, кто ближе всего к пониманию. Он знает о партии всё. И не считает их врагами.</div>
+  </div>
+
+  <div class="ornament">✦ КОНЕЦ АКТА I ✦</div>
+</div>
+
+<!-- ════ АКТ II ОБЗОР ════ -->
+<div class="page" id="page-act2" data-title="АКТ II — Обзор" data-part="Акт II">
+  <div class="act-banner" data-act="II" style="color:var(--act2);border-color:rgba(122,58,0,.3)">
+    <div class="act-banner-label">Акт второй</div>
+    <div class="act-banner-title">Великая Война</div>
+    <div class="act-banner-levels">Уровни 6–12 · 8–12 сессий · Астерра · Хребет · Равнины · Подземье</div>
+    <div class="act-banner-desc">Партия выходит в большой мир. Три фракции ведут войну. Иллитиды наступают в тени. Каждые 3 сессии без вмешательства — одно плохое событие происходит автоматически.</div>
+  </div>
+
+  <h2>Таймер Роя</h2>
+  <div class="secret-box">
+    <div class="secret-text">Мозговой Бастион строится. Без вмешательства партии — 6 сессий до активации. Мастер ведёт счёт тайно. При каждом «пропущенном» событии — Рой получает одно из следующего:
+    <br>• Сессия 1 без действий: иллитид-агент укрепляется в Паутинном Дворе
+    <br>• Сессия 2: разлом на Пепельных Равнинах расширяется, больше нежити
+    <br>• Сессия 3: Бастион завершает первый этап — псионический фон начинает влиять на Подземье
+    <br>• Сессия 4: агент Роя в Паутине получает доступ к военным планам Дроу
+    <br>• Сессия 5: иллитиды поглощают первое поселение на глубоких уровнях
+    <br>• Сессия 6: БАСТИОН АКТИВЕН — финал Акта II становится значительно сложнее</div>
+  </div>
+
+  <h2>Четыре направления — партия выбирает порядок</h2>
+
+  <table class="info-table">
+    <tr><td>Астерра</td><td>Столица Союза. Архимаг Сеннис собирает Осколки тайно. Лорд Ваэр — Тифлинг в маскировке. Заключённый Дроу Аэйн помнит Молчание лично — 500 лет в подземной камере.</td></tr>
+    <tr><td>Железный Хребет</td><td>Единственный безопасный путь в Подземье. Торин скрывает тайну 4-го уровня шахты. Заблокированная страница в летописи — имя Безымянного. Кто заблокировал?</td></tr>
+    <tr><td>Пепельные Равнины</td><td>Мёртвые продолжают воевать. Разлом к Глуби питает нежить. Призрак Полководца Аша знает кто начал войну — Рой, через агента в Паутине.</td></tr>
+    <tr><td>Паутинный Двор</td><td>Тессир уже здесь. Зел'харра знает тайну Матери-Паучихи. Дессир ждёт своего шанса. Агент Роя среди советников — полностью поглощён.</td></tr>
+  </table>
+
+  <h2>Ключевые откровения Акта II</h2>
+
+  <div class="secret-box">
+    <div class="secret-text">
+      <strong>Астерра:</strong> Предок Архимага Сенниса был одним из магов, запечатавших Первозданных 3000 лет назад. Сеннис знает — и считает это гордостью. Он продолжает дело предка.<br><br>
+      <strong>Хребет:</strong> Страница с именем Безымянного заблокирована 2000 лет назад. Это сделал предок нынешнего Архимага. Две разные семьи — одна нить предательства длиной в тысячелетия.<br><br>
+      <strong>Равнины:</strong> Война была провокацией. Агент Роя — дроу в Паутинном Дворе, полностью поглощённый. Зел'харра до сих пор не знает. Он специально стравил Союз и Тифлингов чтобы открыть разлом для Бастиона.<br><br>
+      <strong>Паутинный Двор:</strong> Тессир предлагает Зел'харре союз от имени «Третьего Дома» — советника Архимага Мэйна, который 200 лет выполняет волю Тюремщика. Сам не знает.<br><br>
+      <strong>Улей Роя (финал):</strong> В центре Бастиона — ответ: Мэйн — агент Тюремщика. Рой пришёл не уничтожить — поглотить Безымянного. Тюремщик использует Рой как инструмент против пробуждения.
+    </div>
+  </div>
+
+  <h2>Сарвэн — первое личное появление</h2>
+
+  <p>После уничтожения или захвата Бастиона — Сарвэн появляется лично. Впервые за тысячи лет он приходит сам, без посредников.</p>
+
+  <div class="dialog-box">
+    <div class="dialog-speaker"><span class="dialog-speaker-emoji">🧛</span>Сарвэн — финал Акта II</div>
+    <div class="dialog-lines">
+      <div class="dialog-line">Вы дошли. Дальше, чем большинство. Намного дальше.</div>
+      <div class="dialog-line">Теперь вы готовы к вопросу, который изменит всё.</div>
+      <div class="dialog-line">(долгая пауза) Вы хотите знать правду о Молчании Небес — зная, что она изменит всё, во что вы верите?</div>
+    </div>
+    <div class="dialog-note">Это буквально выбор игроков. Сарвэн ждёт ответа столько, сколько нужно. Он умеет ждать.</div>
+  </div>
+
+  <div class="choice-box">
+    <div class="choice-title">Финальный выбор Акта II</div>
+    <div class="choice-q">Принять правду?</div>
+    <div class="choice-option">
+      <div class="co-arrow co-yes">▸</div>
+      <div class="co-body">
+        <div class="co-head">Да, мы готовы</div>
+        <div class="co-detail">Сарвэн рассказывает всё о Молчании Небес. Акт III начинается с полным знанием картины.</div>
+        <div class="co-effect">→ +500 ОХ. Сарвэн как союзник без условий. Тюремщик узнаёт — и начинает действовать активнее.</div>
+      </div>
+    </div>
+    <div class="choice-option">
+      <div class="co-arrow co-no">▸</div>
+      <div class="co-body">
+        <div class="co-head">Не сейчас. Нам нужно время.</div>
+        <div class="co-detail">Сарвэн понимает. Уходит. Правда придёт в Акте III — по частям, через боль и открытия.</div>
+        <div class="co-effect">→ Акт III тяжелее. Но партия сохраняет иллюзии немного дольше.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ АКТ III ОБЗОР ════ -->
+<div class="page" id="page-act3" data-title="АКТ III — Обзор" data-part="Акт III">
+  <div class="act-banner" data-act="III" style="color:var(--act3);border-color:rgba(74,26,122,.3)">
+    <div class="act-banner-label">Акт третий</div>
+    <div class="act-banner-title">Пустота и Финал</div>
+    <div class="act-banner-levels">Уровни 13–20 · 6–10 сессий · Правда · Тюремщик · Три финала</div>
+    <div class="act-banner-desc">Правда о Молчании Небес. Тюремщик раскрывает себя. Три финала — бой, договор, освобождение. Нет правильного ответа. Есть только выбор.</div>
+  </div>
+
+  <h2>Молчание Небес — полная правда</h2>
+
+  <p class="dropcap">Три тысячи лет назад Первозданные — восемь существ, создавших Варнтал — стали слишком могущественными для магов того времени. Маги могли с ними сотрудничать — или запечатать. Они выбрали второе. Не потому что Первозданные угрожали — а потому что маги хотели монополии на магию.</p>
+
+  <p>Это был переворот. Политический, космологический, исторический. «Молчание Небес» — красивое название для грабежа. Первозданных объявили опасными — задним числом. История переписана победителями.</p>
+
+  <div class="secret-box">
+    <div class="secret-text">Тюремщик Вэйл Корн — последний выживший из магов-заговорщиков. Три тысячи лет. Бессмертие как побочный эффект ритуала запечатывания. Он никогда не сомневался. С его точки зрения — он спас мир. С определённой точки зрения — он был прав. Это делает его настоящим финальным боссом: не монстром, а убеждённым человеком с тысячелетним стажем.</div>
+  </div>
+
+  <h2>Безымянный — Аш'Вэй</h2>
+
+  <div class="atm-box">
+    <div class="atm-text">В Пустоте нет гравитации, нет времени, нет форм. Безымянный не атакует. Он говорит. Одновременно со всей партией — но каждый слышит разное. Его голос адаптируется к каждому персонажу индивидуально.<br><br>
+    Он не просит свободы. Он просит справедливости. Разница важна. Мастер должен передать это — не через объяснение, а через разговор.</div>
+  </div>
+
+  <div class="tip-box"><div class="tip-text">Мастер готовит индивидуальное послание от Безымянного для каждого персонажа — связанное с его предысторией. «Ты помнишь сон про...» Это лучший момент для личного нарратива всей кампании. Потрать время на подготовку.</div></div>
+
+  <h2>Тюремщик Вэйл Корн</h2>
+
+  <div class="dialog-box">
+    <div class="dialog-speaker"><span class="dialog-speaker-emoji">⛓️</span>Тюремщик — первая встреча в Астерре</div>
+    <div class="dialog-lines">
+      <div class="dialog-line">Я спас этот мир. Трижды. Четырежды. Я вновь спасу его — от вас.</div>
+      <div class="dialog-line">Оставьте Безымянного в заточении. Взамен — любые знания. Любые ресурсы. Вечная жизнь, если хотите.</div>
+      <div class="dialog-line">(если отказывают) Тогда я буду ждать у Врат. Я умею ждать.</div>
+    </div>
+    <div class="dialog-note">Это не блеф. Он действительно предлагает вечную жизнь. И он действительно считает что прав. Это самое страшное.</div>
+  </div>
+
+  <h2>Финальная дипломатия</h2>
+
+  <p>В Акте III партия должна одновременно решить несколько задач. Каждая решённая задача даёт +1 союзника на финальную битву или открывает дополнительный путь к финалу.</p>
+
+  <table class="info-table">
+    <tr><td>Остановить Великую Войну</td><td>Любой мир между фракциями. Четвёртый Осколок у дракона Аш'Валина — он ждёт достойного 3000 лет.</td></tr>
+    <tr><td>Нейтрализовать Мэйна</td><td>Советник Архимага — агент Тюремщика. Он не знает об этом. Его можно спасти или уничтожить.</td></tr>
+    <tr><td>Сарвэн как союзник</td><td>Три условия: узнать его имя, доказать готовность к правде, задать правильный вопрос.</td></tr>
+    <tr><td>Каэл (если выжил)</td><td>Страж Гробницы как союзник в финальной битве. CR 13 на стороне партии.</td></tr>
+    <tr><td>Легализация Ночных Домов</td><td>Вейра и её информация в финальном сражении. Ценнее любого союзника с мечом.</td></tr>
+  </table>
+
+  <h2>Врата Без Порога</h2>
+
+  <div class="atm-box">
+    <div class="atm-text">Врата Без Порога — точка, где три мира существуют одновременно. Время нелинейно. Логика не работает.<br><br>
+    Здесь присутствуют все, кто умер в кампании — в форме эха. Инквизитор Велис. Картограф Белов. Тот, кого партия не смогла спасти. Это последний шанс поговорить. Мастер заранее думает — что бы эти люди сказали.</div>
+  </div>
+</div>
+
+<!-- ════ ФИНАЛЫ ════ -->
+<div class="page" id="page-endings" data-title="Финалы: Три пути" data-part="Акт III">
+  <div class="chapter-header">
+    <div class="chapter-eyebrow">Финальная глава</div>
+    <div class="chapter-title">Три Пути</div>
+    <div class="chapter-sub">Бой · Договор · Освобождение · Скрытый финал</div>
+    <div class="chapter-rule"></div>
+  </div>
+
+  <p class="dropcap">Нет правильного ответа. Есть только выбор — и то, что партия готова заплатить за него. Мастер должен быть готов к любому из путей и вести каждый с одинаковым уважением к решению игроков.</p>
+
+  <h2>Финал A: Бой с Тюремщиком</h2>
+
+  <div class="stat-block">
+    <div class="sb-title-bar">
+      <div class="sb-emoji">⛓️</div>
+      <div>
+        <div class="sb-name">Вэйл Корн, Тюремщик</div>
+        <div class="sb-type">Гуманоид (человек), Законно-нейтральный · Финальный босс</div>
+      </div>
+      <div class="sb-cr">CR 24 · 62 000 ОХ</div>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-stats">
+      <div class="sb-stat"><div class="sb-stat-label">Хиты</div><div class="sb-stat-val">420</div></div>
+      <div class="sb-stat"><div class="sb-stat-label">КД</div><div class="sb-stat-val">19</div></div>
+      <div class="sb-stat"><div class="sb-stat-label">Скорость</div><div class="sb-stat-val">40 фт.</div></div>
+    </div>
+    <div class="sb-body">
+      <div class="sb-row"><strong>Характеристики:</strong> СИЛ 18 (+4) · ЛОВ 16 (+3) · ТЕЛ 20 (+5) · ИНТ 24 (+7) · МУД 22 (+6) · ХАР 20 (+5)</div>
+      <div class="sb-row"><strong>Спасброски:</strong> ИНТ +14 · МУД +13 · ХАР +12</div>
+      <div class="sb-row"><strong>Иммунитет к урону:</strong> некротический, психический; дробящий, режущий, колющий от немагического оружия</div>
+      <div class="sb-row"><strong>Иммунитет к состояниям:</strong> очарован, испуган, отравлен, истощён</div>
+      <div class="sb-row"><strong>Легендарные действия:</strong> 3/раунд (атака, движение, заклинание 1 ур.)</div>
+      <div class="sb-row"><strong>Ауры:</strong> Антимагическое поле (60 фт., отключаемое бонусным действием) · Аура Страха DC 20</div>
+
+      <div style="margin:12px 0 6px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--red);text-transform:uppercase">Три фазы боя</div>
+
+      <div class="sb-phase" style="border-left-color:var(--gold)">
+        <strong>Фаза I — Хранитель (100%–67% HP):</strong> Говорит во время боя. Объясняет свои действия. Предлагает пакт в конце каждого раунда. «Вы можете остановиться. Прямо сейчас. Это не обязательно.» Его атаки сдержанны — он не хочет убивать, хочет убедить. Жезл Заточения ×2: +16, 3d10+10 силового.
+      </div>
+      <div class="sb-phase" style="border-left-color:var(--gold2)">
+        <strong>Фаза II — Судья (66%–34% HP):</strong> Он судит партию по их поступкам в кампании. «Ты позволил _____ умереть.» «Ты предал _____ ради выгоды.» Механически: за каждый «грех» в кампании (Мастер составляет список) — +2d6 к его урону против этого персонажа в этой фазе. Совокупная атмосфера обвинения. Щит Вечной Тюрьмы: 50 ед. щита, восстанавливается 10 ед./раунд.
+      </div>
+      <div class="sb-phase" style="border-left-color:var(--red)">
+        <strong>Фаза III — Тюрьма (33%–0% HP):</strong> Всё пространство становится тюрьмой. Стены закрываются (30×30 фт.). Легендарные действия удваиваются. Слово Заточения (1 раз): Бессмертное Заточение — цель CR 5 или ниже немедленно, CR 10 или ниже при провале WIS DC 22. <strong>Ключ к победе:</strong> Произнести его имя — «ВЭЙЛ КОРН» — он останавливается на 1 раунд, уязвим ко всему урону. Это работает один раз.
+      </div>
+
+      <div class="sb-lore">Он не злодей. Он человек с трёхтысячелетним убеждением. В момент смерти (или поражения) он не ненавидит партию. Он смотрит на них с тем же выражением, с которым смотрел на Первозданных три тысячи лет назад: «Я должен был это сделать.»</div>
+    </div>
+  </div>
+
+  <h2>Финал B: Договор</h2>
+
+  <p>Если партия выслушала Тюремщика полностью и понимает его логику — возможен Договор. Условия обсуждаются как настоящие переговоры. У каждой стороны есть что предложить и что требовать.</p>
+
+  <table class="info-table">
+    <tr><td>Хочет Безымянный</td><td>Справедливость. Признание что его заточили незаконно. Доступ к одному из трёх миров.</td></tr>
+    <tr><td>Хочет Тюремщик</td><td>Гарантия что Безымянный не уничтожит магию. Возможность уйти на покой — впервые за 3000 лет.</td></tr>
+    <tr><td>Что могут партия</td><td>Выступить свидетелями. Гарантировать договор. Найти форму заключения которая устроит обоих.</td></tr>
+  </table>
+
+  <div class="tip-box"><div class="tip-text">Это не механическая встреча. Это ролевая сцена. Дай игрокам говорить. Пусть Тюремщик и Безымянный отвечают через тебя. Лучший финал кампании тот, который партия придумала сама.</div></div>
+
+  <h2>Финал C: Освобождение</h2>
+
+  <p>Уничтожить оковы. Безымянный (Аш'Вэй) выходит полностью. Мир меняется. Это самый рискованный путь — и единственный честный.</p>
+
+  <div class="secret-box">
+    <div class="secret-text">Если партия построила с Безымянным настоящие отношения через всю кампанию — он не уничтожает мир. Он меняет его. Тихо. Постепенно. Как рассвет. Магия становится менее управляемой — и более живой. Часть правил магии меняется. Это не плохо. Это другое. Варнтал перестаёт быть «между вздохами» — он наконец делает вдох.</div>
+  </div>
+
+  <h2>Финал D: Скрытый путь</h2>
+
+  <div class="secret-box">
+    <div class="secret-text">Активируется только если выполнены все условия: собраны все четыре Осколка, Сарвэн — союзник, Мэйн нейтрализован, все Великие Войны остановлены дипломатически.<br><br>
+    Безымянный предлагает четвёртый вариант сам. Не после боя — до него. Он входит в зал Врат и говорит: «Я нашёл другой путь. Не свобода и не заточение. Присутствие.»<br><br>
+    Он становится частью мира — не управляя им, просто присутствуя. Как архетип. Как то, что было до слов. Тюремщик принимает это — впервые за три тысячи лет он слышит ответ который не требует войны.<br><br>
+    Все уходят в мире. Это единственный финал без цены.</div>
+  </div>
+
+  <div class="ornament">✦ ✦ ✦</div>
+
+  <h2>Эпилог</h2>
+
+  <div class="atm-box">
+    <div class="atm-text">Сарвэн исчезает впервые за четыре тысячи лет. Не умирает — уходит. Просто его больше нет. Вейра это чувствует — и плачет впервые за пятьсот лет. Она не знает почему.<br><br>
+    Каэл (если выжил) возвращается в Гробницу. Теперь она пуста — и он её страж по выбору, не по долгу. Разница большая.<br><br>
+    Дракон Аш'Валин остаётся. Он будет помнить ещё тысячу лет. Это его работа — помнить.</div>
+  </div>
+
+  <div class="pull-quote">
+    Варнтал был не первым. И не последним.<br>Но вы были первыми, кто изменил конец.
+    <span class="pq-attr">— Записка без подписи · Бумага тёплая</span>
+  </div>
+</div>
+
+<!-- ════ СТАТБЛОКИ ════ -->
+<div class="page" id="page-stats" data-title="Статблоки боссов" data-part="Приложения">
+  <div class="chapter-header">
+    <div class="chapter-eyebrow">Приложение</div>
+    <div class="chapter-title">Статблоки</div>
+    <div class="chapter-sub">Все боссы и ключевые NPC</div>
+    <div class="chapter-rule"></div>
+  </div>
+
+  <div class="stat-block">
+    <div class="sb-title-bar"><div class="sb-emoji">💀</div><div><div class="sb-name">Каэл, Страж Гробницы</div><div class="sb-type">Нежить (уникальная), нейтральная · Акт I финальный босс</div></div><div class="sb-cr">CR 13 · 10 000 ОХ</div></div>
+    <div class="sb-divider"></div>
+    <div class="sb-stats">
+      <div class="sb-stat"><div class="sb-stat-label">Хиты</div><div class="sb-stat-val">210</div></div>
+      <div class="sb-stat"><div class="sb-stat-label">КД</div><div class="sb-stat-val">17</div></div>
+      <div class="sb-stat"><div class="sb-stat-label">Скорость</div><div class="sb-stat-val">40 фт.</div></div>
+    </div>
+    <div class="sb-body">
+      <div class="sb-row"><strong>СИЛ</strong> 22 (+6) · <strong>ЛОВ</strong> 14 (+2) · <strong>ТЕЛ</strong> 18 (+4) · <strong>ИНТ</strong> 12 (+1) · <strong>МУД</strong> 16 (+3) · <strong>ХАР</strong> 14 (+2)</div>
+      <div class="sb-row"><strong>Иммунитет:</strong> некротический урон, яд; очарован, испуган, истощён, отравлен</div>
+      <div class="sb-phase" style="border-left-color:var(--gold)"><strong>Фаза I (100–50%):</strong> Медленный. Атакует только при атаке. Говорит во время боя — фрагменты истории культа. Коса: +11, досяг. 10 фт., 3d6+6 рубящего + 2d8 некротического.</div>
+      <div class="sb-phase" style="border-left-color:var(--gold2)"><strong>Фаза II (50–25%):</strong> Аура страха 20 фт., WIS DC 16. Призывает 1d4 скелетов (CR 1/4) как бонусное действие. Голос становится отчаяннее: «Зачем вы здесь? Он спит. Пусть спит.»</div>
+      <div class="sb-phase" style="border-left-color:var(--red)"><strong>Фаза III (25–0%):</strong> Светится. Все атаки магические. При поражении: «Он проснётся... без разрешения...» (или версия для мирного пути: «Спасибо. Я так устал.»)</div>
+      <div class="sb-lore">3000 лет одиночества. Его имя — КАЭЛ. Произнести перед ним = он замирает на 1 раунд и вспоминает себя. Мирный путь открыт при любом HP.</div>
+    </div>
+  </div>
+
+  <div class="stat-block">
+    <div class="sb-title-bar"><div class="sb-emoji">🕷️</div><div><div class="sb-name">Аспект Матери-Паучихи</div><div class="sb-type">Нежить (Осколок), хаотично-злая · Акт II босс</div></div><div class="sb-cr">CR 15 · 13 000 ОХ</div></div>
+    <div class="sb-divider"></div>
+    <div class="sb-stats">
+      <div class="sb-stat"><div class="sb-stat-label">Хиты</div><div class="sb-stat-val">256</div></div>
+      <div class="sb-stat"><div class="sb-stat-label">КД</div><div class="sb-stat-val">15</div></div>
+      <div class="sb-stat"><div class="sb-stat-label">Скорость</div><div class="sb-stat-val">40 фт., лазание 40 фт.</div></div>
+    </div>
+    <div class="sb-body">
+      <div class="sb-row"><strong>СИЛ</strong> 18 (+4) · <strong>ЛОВ</strong> 16 (+3) · <strong>ТЕЛ</strong> 20 (+5) · <strong>ИНТ</strong> 14 (+2) · <strong>МУД</strong> 12 (+1) · <strong>ХАР</strong> 18 (+4)</div>
+      <div class="sb-row"><strong>Особенности:</strong> Паутиноходец · Иммунитет к яду · Многоатака ×4</div>
+      <div class="sb-phase" style="border-left-color:var(--gold)"><strong>Фаза I:</strong> Рукопашный бой + паутина. 1d6 пауков (CR 1/4) каждые 3 раунда.</div>
+      <div class="sb-phase" style="border-left-color:var(--gold2)"><strong>Фаза II:</strong> 3 иллюзорных копии (как Зеркальное Изображение). Пол исчезает (паутинные нити). Психический урон добавляется к атакам.</div>
+      <div class="sb-phase" style="border-left-color:var(--red)"><strong>Фаза III:</strong> Иллюзии спадают. Все видят Осколок внутри Аспекта. Произнести правду вслух (Харизма DC 14): Аспект теряет 30 HP. Дроу в зале могут остановиться.</div>
+      <div class="sb-lore">Это Осколок Тиши Валейн, принявший форму бога. Он не злой — он просто исполняет роль которую ему дали. Зел'харра создала культ. Осколок стал культом.</div>
+    </div>
+  </div>
+
+  <div class="stat-block">
+    <div class="sb-title-bar"><div class="sb-emoji">🧠</div><div><div class="sb-name">Архистратег Роя</div><div class="sb-type">Аберрация (иллитид-архимозг), законно-злой · Акт II финальный босс</div></div><div class="sb-cr">CR 18 · 20 000 ОХ</div></div>
+    <div class="sb-divider"></div>
+    <div class="sb-stats">
+      <div class="sb-stat"><div class="sb-stat-label">Хиты</div><div class="sb-stat-val">285</div></div>
+      <div class="sb-stat"><div class="sb-stat-label">КД</div><div class="sb-stat-val">14</div></div>
+      <div class="sb-stat"><div class="sb-stat-label">Скорость</div><div class="sb-stat-val">30 фт., левитация 30 фт.</div></div>
+    </div>
+    <div class="sb-body">
+      <div class="sb-row"><strong>СИЛ</strong> 8 (−1) · <strong>ЛОВ</strong> 14 (+2) · <strong>ТЕЛ</strong> 18 (+4) · <strong>ИНТ</strong> 26 (+8) · <strong>МУД</strong> 20 (+5) · <strong>ХАР</strong> 16 (+3)</div>
+      <div class="sb-row"><strong>Псионика:</strong> Ментальный удар: +14, 3d8+8 психического. Извлечение мозга: CON DC 20 или 6d10+30 и max HP снижается.</div>
+      <div class="sb-phase" style="border-left-color:var(--gold)"><strong>Фаза I:</strong> Говорит. Предлагает союз. Собирает информацию. «Мы не враги. Мы просто... эффективнее.»</div>
+      <div class="sb-phase" style="border-left-color:var(--gold2)"><strong>Фаза II:</strong> 4 стражника-иллитида. Арена: все слышат мысли друг друга (приходится раскрывать тайны). Псионическая волна: INT DC 18 или забыть события последних 5 минут.</div>
+      <div class="sb-phase" style="border-left-color:var(--red)"><strong>Фаза III:</strong> Разделяется на 3 копии (каждая 95 HP, CR 15). Уничтожить все три одновременно — иначе восстанавливаются.</div>
+      <div class="sb-lore">В центре Бастиона — данные о советнике Мэйне. Ключ к пониманию кто такой Тюремщик и как он работает.</div>
+    </div>
+  </div>
+
+  <div class="stat-block">
+    <div class="sb-title-bar"><div class="sb-emoji">🧛</div><div><div class="sb-name">Сарвэн, Первый Вампир</div><div class="sb-type">Нежить (уникальный), нейтральный · Союзник или противник</div></div><div class="sb-cr">CR 21 · 33 000 ОХ</div></div>
+    <div class="sb-divider"></div>
+    <div class="sb-stats">
+      <div class="sb-stat"><div class="sb-stat-label">Хиты</div><div class="sb-stat-val">332</div></div>
+      <div class="sb-stat"><div class="sb-stat-label">КД</div><div class="sb-stat-val">17</div></div>
+      <div class="sb-stat"><div class="sb-stat-label">Скорость</div><div class="sb-stat-val">40 фт., лазание 40 фт.</div></div>
+    </div>
+    <div class="sb-body">
+      <div class="sb-row"><strong>СИЛ</strong> 20 (+5) · <strong>ЛОВ</strong> 18 (+4) · <strong>ТЕЛ</strong> 20 (+5) · <strong>ИНТ</strong> 22 (+6) · <strong>МУД</strong> 20 (+5) · <strong>ХАР</strong> 24 (+7)</div>
+      <div class="sb-row"><strong>Регенерация:</strong> 30 HP/раунд кроме излучения и огня</div>
+      <div class="sb-row"><strong>Укус:</strong> +13, 1d6+6 + 3d6 некротического, восстанавливает HP. Взгляд Тысячелетий: WIS DC 19 или Зачарован. Туманная форма (легендарное действие).</div>
+      <div class="sb-lore">4000 лет. Видел Молчание Небес лично. Знает правду о Тюремщике. Атакует только если атакуют его. Три условия союза: узнать его имя, доказать готовность к правде, задать правильный вопрос. Правильный вопрос: «Что произошло в день Молчания — с точки зрения тех кто был там?»</div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- PAGE NAV -->
+<div id="page-nav">
+  <button class="nav-btn" onclick="prevPage()">← Назад</button>
+  <button class="nav-btn" onclick="nextPage()">Вперёд →</button>
+</div>
+
+<script>
+// ══ DATA ══
+const PAGES_DATA = [
+  { id:'page-cover-page', title:'Обложка', part:'Начало' },
+  { id:'page-intro', title:'Введение', part:'Начало' },
+  { id:'page-world', title:'Мир Варнтал', part:'Начало' },
+  { id:'page-act1', title:'АКТ I — Обзор', part:'Акт I' },
+  { id:'page-s1', title:'Сессия 1: Тухлый Якорь', part:'Акт I' },
+  { id:'page-s2', title:'Сессия 2: Первый спуск', part:'Акт I' },
+  { id:'page-s3', title:'Сессия 3: Храм культа', part:'Акт I' },
+  { id:'page-s4', title:'Сессия 4: Гробница', part:'Акт I' },
+  { id:'page-s5', title:'Сессия 5: Финал Акта I', part:'Акт I' },
+  { id:'page-act2', title:'АКТ II — Обзор', part:'Акт II' },
+  { id:'page-act3', title:'АКТ III — Обзор', part:'Акт III' },
+  { id:'page-endings', title:'Финалы: Три пути', part:'Акт III' },
+  { id:'page-stats', title:'Статблоки боссов', part:'Приложения' },
+];
+
+let currentPage = 0;
+
+// ══ BUILD TOC ══
+function buildTOC() {
+  const nav = document.getElementById('toc-nav');
+  let lastPart = '';
+  PAGES_DATA.forEach((p, i) => {
+    if (p.part !== lastPart) {
+      const sep = document.createElement('div');
+      sep.className = 'toc-part';
+      sep.textContent = p.part;
+      nav.appendChild(sep);
+      lastPart = p.part;
+    }
+    const item = document.createElement('div');
+    item.className = 'toc-item' + (i === 0 ? ' active' : '');
+    item.dataset.idx = i;
+    const actColor = { 'Акт I':'var(--act1)', 'Акт II':'var(--act2)', 'Акт III':'var(--act3)', 'Начало':'var(--gold)', 'Приложения':'var(--ink3)' };
+    const partShort = { 'Акт I':'I', 'Акт II':'II', 'Акт III':'III' };
+    item.innerHTML = `
+      <div class="toc-num">${String(i+1).padStart(2,'0')}</div>
+      <div class="toc-name">${p.title}</div>
+      ${partShort[p.part] ? `<div class="toc-act" style="color:${actColor[p.part]||'var(--gold)'};border-color:${actColor[p.part]||'var(--gold)'}">${partShort[p.part]}</div>` : ''}
+    `;
+    item.addEventListener('click', () => goTo(i));
+    nav.appendChild(item);
+  });
+}
+
+function goTo(idx) {
+  if (idx < 0 || idx >= PAGES_DATA.length) return;
+  const prev = PAGES_DATA[currentPage];
+  const next = PAGES_DATA[idx];
+  document.getElementById(prev.id)?.classList.remove('active');
+  document.getElementById(next.id)?.classList.add('active');
+  document.querySelectorAll('.toc-item').forEach(el => {
+    el.classList.toggle('active', +el.dataset.idx === idx);
+  });
+  currentPage = idx;
+  document.getElementById('content').scrollTop = 0;
+  updateProgress();
+  // Scroll TOC item into view
+  const activeItem = document.querySelector('.toc-item.active');
+  if (activeItem) activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function prevPage() { goTo(currentPage - 1); }
+function nextPage() { goTo(currentPage + 1); }
+
+function updateProgress() {
+  const pct = ((currentPage) / (PAGES_DATA.length - 1) * 100).toFixed(1);
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+// Keyboard nav
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextPage();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevPage();
+});
+
+buildTOC();
+updateProgress();
+</script>
+</body>
+</html>

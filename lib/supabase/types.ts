@@ -6,6 +6,8 @@ export type MapType = 'image' | 'video' | 'gif'
 export type GridType = 'square' | 'hex' | 'none'
 export type TokenOwnerType = 'player' | 'npc' | 'object'
 export type MusicStatus = 'playing' | 'paused' | 'stopped'
+export type WeatherType = 'clear' | 'cloudy' | 'rain' | 'storm' | 'snow' | 'fog' | 'heat'
+export type TimeOfDay = 'dawn' | 'day' | 'dusk' | 'night' | 'midnight'
 export type ItemType = 'weapon' | 'armor' | 'potion' | 'ring' | 'wondrous' | 'tool' | 'misc'
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'very_rare' | 'legendary' | 'artifact'
 export type SpellSchool = 'abjuration' | 'conjuration' | 'divination' | 'enchantment' | 'evocation' | 'illusion' | 'necromancy' | 'transmutation'
@@ -168,6 +170,7 @@ export type MapState = {
   grid_type: GridType
   grid_size: number
   grid_color: string
+  grid_stroke_width: number
   width: number
   height: number
   updated_at: string
@@ -198,6 +201,14 @@ export type FogState = {
   session_id: string
   fog_enabled: boolean
   revealed_zones: FogZone[]
+}
+
+export type WorldState = {
+  id: string
+  session_id: string
+  weather: WeatherType
+  time_of_day: TimeOfDay
+  updated_at: string
 }
 
 export type CombatState = {
@@ -305,6 +316,7 @@ export type Spell = {
   description: string
   higher_levels: string | null
   classes: string[]
+  image_url: string | null
   is_homebrew: boolean
   created_by: string | null
 }
@@ -323,6 +335,7 @@ export type Database = {
       map_state: { Row: MapState; Insert: Omit<MapState, 'id' | 'updated_at'>; Update: Partial<MapState> }
       map_tokens: { Row: MapToken; Insert: Omit<MapToken, 'id' | 'created_at'>; Update: Partial<MapToken> }
       fog_state: { Row: FogState; Insert: Omit<FogState, 'id'>; Update: Partial<FogState> }
+      world_state: { Row: WorldState; Insert: Omit<WorldState, 'id' | 'updated_at'>; Update: Partial<WorldState> }
       combat_state: { Row: CombatState; Insert: Omit<CombatState, 'id' | 'updated_at'>; Update: Partial<CombatState> }
       combat_participants: { Row: CombatParticipant; Insert: Omit<CombatParticipant, 'id'>; Update: Partial<CombatParticipant> }
       music_scenes: { Row: MusicScene; Insert: Omit<MusicScene, 'id'>; Update: Partial<MusicScene> }
