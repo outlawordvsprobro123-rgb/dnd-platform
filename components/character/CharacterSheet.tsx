@@ -27,6 +27,7 @@ export default function CharacterSheet({ character: initial, inventory: initialI
   const [saveMsg, setSaveMsg] = useState('')
   const [editMode, setEditMode] = useState(false)
   const [draft, setDraft] = useState(initial)
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null)
 
   // Инвентарь — добавление
   const [newItem, setNewItem] = useState({ name: '', quantity: 1, weight: 0, description: '' })
@@ -363,19 +364,30 @@ export default function CharacterSheet({ character: initial, inventory: initialI
               <div className="text-center py-8 text-gray-500">Инвентарь пуст</div>
             ) : (
               <div className="space-y-2">
-                {inventory.map(item => (
-                  <div key={item.id} className={`flex items-center gap-3 bg-gray-800 border rounded-xl px-4 py-3 ${item.equipped ? 'border-purple-700' : 'border-gray-700'}`}>
-                    <button onClick={() => toggleEquipped(item)} title={item.equipped ? 'Снять' : 'Надеть'}>
-                      <div className={`w-4 h-4 rounded border ${item.equipped ? 'bg-purple-500 border-purple-500' : 'border-gray-500'}`} />
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium">{item.name}</p>
-                      {item.description && <p className="text-gray-400 text-xs truncate">{item.description}</p>}
+                {inventory.map(item => {
+                  const isExpanded = expandedItemId === item.id
+                  return (
+                    <div key={item.id} className={`bg-gray-800 border rounded-xl ${item.equipped ? 'border-purple-700' : 'border-gray-700'}`}>
+                      <div className="flex items-center gap-3 px-4 py-3 cursor-pointer" onClick={() => setExpandedItemId(isExpanded ? null : item.id)}>
+                        <button onClick={e => { e.stopPropagation(); toggleEquipped(item) }} title={item.equipped ? 'Снять' : 'Надеть'}>
+                          <div className={`w-4 h-4 rounded border ${item.equipped ? 'bg-purple-500 border-purple-500' : 'border-gray-500'}`} />
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium">{item.name}</p>
+                          {item.description && !isExpanded && <p className="text-gray-400 text-xs truncate">{item.description}</p>}
+                        </div>
+                        <span className="text-gray-400 text-sm flex-shrink-0">× {item.quantity}</span>
+                        {item.description && <span className="text-gray-600 text-xs flex-shrink-0">{isExpanded ? '▲' : '▼'}</span>}
+                        <button onClick={e => { e.stopPropagation(); removeInventoryItem(item.id) }} className="text-gray-600 hover:text-red-400 text-sm transition-colors flex-shrink-0">✕</button>
+                      </div>
+                      {isExpanded && item.description && (
+                        <div className="px-4 pb-3 text-xs text-gray-300 leading-relaxed border-t border-gray-700 pt-2">
+                          {item.description}
+                        </div>
+                      )}
                     </div>
-                    <span className="text-gray-400 text-sm flex-shrink-0">× {item.quantity}</span>
-                    <button onClick={() => removeInventoryItem(item.id)} className="text-gray-600 hover:text-red-400 text-sm transition-colors flex-shrink-0">✕</button>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

@@ -27,6 +27,7 @@ export function InventoryCatalog({ characterId, onAdded }: Props) {
   const [loading, setLoading] = useState(false)
   const [adding, setAdding] = useState<string | null>(null)
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Fetch when search or tab changes
@@ -161,58 +162,113 @@ export function InventoryCatalog({ characterId, onAdded }: Props) {
             {!loading && results.map(entry => {
               const isAdded = addedIds.has(entry.id)
               const isAdding = adding === entry.id
+              const isExpanded = expandedId === entry.id
 
               return (
-                <div key={entry.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-750">
-                  <div className="flex-1 min-w-0">
-                    {tab === 'loot' && (() => {
-                      const item = entry as LootItem
-                      return (
-                        <>
-                          <p className="text-sm text-white truncate">{item.name}</p>
-                          <p className="text-xs text-gray-500 truncate">
-                            <span className={RARITY_COLOR[item.rarity]}>{RARITY_LABEL[item.rarity]}</span>
-                            {item.weight > 0 && ` · ${item.weight} фнт`}
-                            {item.cost_gp > 0 && ` · ${item.cost_gp} зм`}
-                          </p>
-                        </>
-                      )
-                    })()}
-                    {tab === 'spells' && (() => {
-                      const spell = entry as Spell
-                      return (
-                        <>
-                          <p className="text-sm text-white truncate">{spell.name}</p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {LEVEL_LABEL(spell.level)} · {spell.casting_time} · {spell.range}
-                          </p>
-                        </>
-                      )
-                    })()}
-                    {tab === 'bestiary' && (() => {
-                      const creature = entry as BestiaryCreature
-                      return (
-                        <>
-                          <p className="text-sm text-white truncate">{creature.name}</p>
-                          <p className="text-xs text-gray-500 truncate">
-                            КО {creature.cr} · {creature.type} · HP {creature.hp} · КД {creature.ac}
-                          </p>
-                        </>
-                      )
-                    })()}
+                <div key={entry.id} className="border-b border-gray-700 last:border-0">
+                  <div className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-750 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : entry.id)}>
+                    <div className="flex-1 min-w-0">
+                      {tab === 'loot' && (() => {
+                        const item = entry as LootItem
+                        return (
+                          <>
+                            <p className="text-sm text-white">{item.name}</p>
+                            <p className="text-xs text-gray-500">
+                              <span className={RARITY_COLOR[item.rarity]}>{RARITY_LABEL[item.rarity]}</span>
+                              {item.weight > 0 && ` · ${item.weight} фнт`}
+                              {item.cost_gp > 0 && ` · ${item.cost_gp} зм`}
+                            </p>
+                          </>
+                        )
+                      })()}
+                      {tab === 'spells' && (() => {
+                        const spell = entry as Spell
+                        return (
+                          <>
+                            <p className="text-sm text-white">{spell.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {LEVEL_LABEL(spell.level)} · {spell.casting_time} · {spell.range}
+                            </p>
+                          </>
+                        )
+                      })()}
+                      {tab === 'bestiary' && (() => {
+                        const creature = entry as BestiaryCreature
+                        return (
+                          <>
+                            <p className="text-sm text-white">{creature.name}</p>
+                            <p className="text-xs text-gray-500">
+                              КО {creature.cr} · {creature.type} · HP {creature.hp} · КД {creature.ac}
+                            </p>
+                          </>
+                        )
+                      })()}
+                    </div>
+
+                    <span className="text-gray-600 text-xs flex-shrink-0">{isExpanded ? '▲' : '▼'}</span>
+
+                    <button
+                      onClick={e => { e.stopPropagation(); addItem(entry) }}
+                      disabled={isAdding || isAdded}
+                      className={`flex-shrink-0 w-8 h-8 rounded-lg text-sm font-bold transition-colors ${
+                        isAdded
+                          ? 'bg-green-700 text-green-200 cursor-default'
+                          : 'bg-purple-700 hover:bg-purple-600 text-white disabled:opacity-50'
+                      }`}
+                    >
+                      {isAdded ? '✓' : isAdding ? '…' : '+'}
+                    </button>
                   </div>
 
-                  <button
-                    onClick={() => addItem(entry)}
-                    disabled={isAdding || isAdded}
-                    className={`flex-shrink-0 w-8 h-8 rounded-lg text-sm font-bold transition-colors ${
-                      isAdded
-                        ? 'bg-green-700 text-green-200 cursor-default'
-                        : 'bg-purple-700 hover:bg-purple-600 text-white disabled:opacity-50'
-                    }`}
-                  >
-                    {isAdded ? '✓' : isAdding ? '…' : '+'}
-                  </button>
+                  {/* Раскрытое описание */}
+                  {isExpanded && (
+                    <div className="px-3 pb-3 text-xs text-gray-300 leading-relaxed bg-gray-900 border-t border-gray-700">
+                      {tab === 'loot' && (() => {
+                        const item = entry as LootItem
+                        return (
+                          <div className="pt-2 space-y-1">
+                            {item.requires_attunement && <p className="text-yellow-500">Требует настройки</p>}
+                            {item.description && <p>{item.description}</p>}
+                          </div>
+                        )
+                      })()}
+                      {tab === 'spells' && (() => {
+                        const spell = entry as Spell
+                        const compParts = [
+                          spell.components?.v ? 'В' : '',
+                          spell.components?.s ? 'С' : '',
+                          spell.components?.m ? `М (${spell.components.m})` : '',
+                        ].filter(Boolean).join(', ')
+                        return (
+                          <div className="pt-2 space-y-1">
+                            <p className="text-gray-400">
+                              {compParts && <><span className="text-gray-300">Компоненты:</span> {compParts} · </>}
+                              <span className="text-gray-300">Длительность:</span> {spell.duration}
+                            </p>
+                            {spell.description && <p>{spell.description}</p>}
+                            {spell.higher_levels && <p className="text-purple-300"><span className="text-gray-300">На высоких уровнях:</span> {spell.higher_levels}</p>}
+                          </div>
+                        )
+                      })()}
+                      {tab === 'bestiary' && (() => {
+                        const creature = entry as BestiaryCreature
+                        const speedParts = Object.entries(creature.speed ?? {})
+                          .filter(([, v]) => v)
+                          .map(([k, v]) => `${k} ${v} фт`)
+                          .join(', ')
+                        const sensesParts = Object.entries(creature.senses ?? {})
+                          .map(([k, v]) => `${k} ${v}`)
+                          .join(', ')
+                        return (
+                          <div className="pt-2 space-y-1">
+                            <p><span className="text-gray-400">Размер:</span> {creature.size} · <span className="text-gray-400">Тип:</span> {creature.type}</p>
+                            {speedParts && <p><span className="text-gray-400">Скорость:</span> {speedParts}</p>}
+                            {sensesParts && <p><span className="text-gray-400">Чувства:</span> {sensesParts}</p>}
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  )}
                 </div>
               )
             })}

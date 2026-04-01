@@ -103,17 +103,7 @@ export function LootGenerator({ sessionId, isMaster }: Props) {
         const res = await fetch(`/api/sessions/${sessionId}/players`)
         if (!res.ok) return
         const data = await res.json()
-        // Normalise — API may return players with nested character or just { id, name }
-        const chars: Character[] = Array.isArray(data)
-          ? data
-              .filter((p: { character?: { id: string; name: string }; id?: string; name?: string }) => p.character || p.name)
-              .map((p: { character?: { id: string; name: string }; id?: string; name?: string }) =>
-                p.character
-                  ? { id: p.character.id, name: p.character.name }
-                  : { id: p.id as string, name: p.name as string }
-              )
-          : []
-        setCharacters(chars)
+        setCharacters(Array.isArray(data) ? data : [])
       } catch {
         // ignore
       }
