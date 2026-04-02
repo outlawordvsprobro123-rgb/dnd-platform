@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
 const participantSchema = z.object({
-  token_id: z.string().uuid(),
+  token_id: z.string().uuid().optional(),
   name: z.string(),
   initiative: z.number().int(),
   hp_max: z.number().int(),
@@ -11,7 +11,7 @@ const participantSchema = z.object({
   ac: z.number().int().default(10),
   is_player: z.boolean().default(false),
 })
-const schema = z.object({ participants: z.array(participantSchema).min(2) })
+const schema = z.object({ participants: z.array(participantSchema).min(1) })
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -31,7 +31,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // Сортируем по инициативе
   const sorted = body.data.participants
     .sort((a, b) => b.initiative - a.initiative)
-    .map((p, i) => ({ ...p, session_id: id, sort_order: i }))
+    .map((p, i) => ({
+      ...p,
+      token_id: p.token_id ?? crypto.randomUUID(),
+      session_id: id,
+      sort_order: i,
+      conditions: [],
+      is_defeated: false,
+    }))
 
   await supabase.from('combat_participants').delete().eq('session_id', id)
   const { data: participants, error: pErr } = await supabase.from('combat_participants').insert(sorted).select()
