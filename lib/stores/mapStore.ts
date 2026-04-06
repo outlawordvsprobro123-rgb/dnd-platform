@@ -10,6 +10,8 @@ interface MapStore {
   selectedTool: MapTool
   selectedTokenId: string | null
   pings: { id: string; x: number; y: number; label: string }[]
+  fogBrushSize: number
+  snapToGrid: boolean
 
   setTokens: (tokens: MapToken[]) => void
   addToken: (token: MapToken) => void
@@ -22,6 +24,8 @@ interface MapStore {
   setSelectedTokenId: (id: string | null) => void
   addPing: (ping: { id: string; x: number; y: number; label: string }) => void
   removePing: (id: string) => void
+  setFogBrushSize: (size: number) => void
+  setSnapToGrid: (snap: boolean) => void
   reset: () => void
 }
 
@@ -32,6 +36,8 @@ export const useMapStore = create<MapStore>((set) => ({
   selectedTool: 'select',
   selectedTokenId: null,
   pings: [],
+  fogBrushSize: 80,
+  snapToGrid: false,
 
   setTokens: (tokens) => set({ tokens }),
   addToken: (token) => set((s) => ({ tokens: [...s.tokens, token] })),
@@ -48,5 +54,10 @@ export const useMapStore = create<MapStore>((set) => ({
   setSelectedTokenId: (selectedTokenId) => set({ selectedTokenId }),
   addPing: (ping) => set((s) => ({ pings: [...s.pings, ping] })),
   removePing: (id) => set((s) => ({ pings: s.pings.filter(p => p.id !== id) })),
-  reset: () => set({ tokens: [], mapState: null, fogState: null, selectedTool: 'select', selectedTokenId: null, pings: [] }),
+  setFogBrushSize: (fogBrushSize) => set({ fogBrushSize }),
+  setSnapToGrid: (snapToGrid) => set({ snapToGrid }),
+  reset: () => set({
+    tokens: [], mapState: null, fogState: null,
+    selectedTool: 'select', selectedTokenId: null, pings: [],
+  }),
 }))

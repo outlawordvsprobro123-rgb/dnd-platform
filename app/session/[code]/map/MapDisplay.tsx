@@ -1,30 +1,51 @@
 'use client'
 import { useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import type { Session, MapToken, MapState, FogState } from '@/lib/supabase/types'
+import type { Session, MapToken, MapState, FogState, WorldState } from '@/lib/supabase/types'
 import { useMapStore } from '@/lib/stores/mapStore'
+import { useWorldStore } from '@/lib/stores/worldStore'
 import { useMapChannel } from '@/lib/realtime/useMapChannel'
 
 const MapCanvas = dynamic(() => import('@/components/battlemap/MapCanvas').then(m => ({ default: m.MapCanvas })), { ssr: false })
 
+const WEATHER_ICONS: Record<string, string> = {
+  clear: '☀', cloudy: '⛅', rain: '🌧', storm: '⛈', snow: '❄', fog: '≋', heat: '🔥',
+}
+const WEATHER_LABELS: Record<string, string> = {
+  clear: 'Ясно', cloudy: 'Облачно', rain: 'Дождь', storm: 'Гроза', snow: 'Снег', fog: 'Туман', heat: 'Жара',
+}
+const TIME_ICONS: Record<string, string> = {
+  dawn: '◑', day: '○', dusk: '◐', night: '●', midnight: '◉',
+}
+const TIME_LABELS: Record<string, string> = {
+  dawn: 'Рассвет', day: 'День', dusk: 'Закат', night: 'Ночь', midnight: 'Полночь',
+}
+
 interface Props {
   session: Session
   isMaster: boolean
+  currentUserId: string
   initialTokens: MapToken[]
   initialMapState: MapState | null
   initialFogState: FogState | null
+  initialWorldState: WorldState | null
 }
 
-export default function MapDisplay({ session, isMaster, initialTokens, initialMapState, initialFogState }: Props) {
+export default function MapDisplay({
+  session, isMaster, currentUserId,
+  initialTokens, initialMapState, initialFogState, initialWorldState,
+}: Props) {
   const { setTokens, setMapState, setFogState } = useMapStore()
+  const { worldState, setWorldState } = useWorldStore()
 
   useEffect(() => {
     setTokens(initialTokens)
     if (initialMapState) setMapState(initialMapState)
     if (initialFogState) setFogState(initialFogState)
+    if (initialWorldState) setWorldState(initialWorldState)
   }, [session.id])
 
-  const { broadcastTokenMove, send } = useMapChannel(session.id)
+  const { broadcastTokenMove, broadcastPing, send, realtimeStatus } = useMapChannel(session.id)
 
   function openMasterPanel() {
     window.open(
@@ -47,12 +68,35 @@ export default function MapDisplay({ session, isMaster, initialTokens, initialMa
       <MapCanvas
         sessionId={session.id}
         isMaster={isMaster}
-        currentUserId=""
+        currentUserId={currentUserId}
         broadcastTokenMove={broadcastTokenMove}
         broadcast={send}
+        broadcastPing={broadcastPing}
+        pingLabel={isMaster ? 'Мастер' : 'Игрок'}
       />
 
-      {/* Controls overlay */}
+      {/* Оверлей погоды и времени */}
+      {worldState && (
+        <div className="absolute bottom-12 left-3 z-20 flex items-center gap-2 bg-black/60 backdrop-blur border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-300 pointer-events-none select-none">
+          <span>{WEATHER_ICONS[worldState.weather]} {WEATHER_LABELS[worldState.weather]}</span>
+          <span className="text-gray-600">·</span>
+          <span>{TIME_ICONS[worldState.time_of_day]} {TIME_LABELS[worldState.time_of_day]}</span>
+        </div>
+      )}
+
+      {/* Индикатор realtime-соединения */}
+      <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 bg-black/60 border border-gray-700 rounded-full px-2.5 py-1 text-xs">
+        <span className={`w-2 h-2 rounded-full ${
+          realtimeStatus === 'connected' ? 'bg-green-400 animate-pulse' :
+          realtimeStatus === 'error' ? 'bg-red-400' : 'bg-yellow-400 animate-pulse'
+        }`} />
+        <span className="text-gray-300">
+          {realtimeStatus === 'connected' ? 'Синхронизация' :
+           realtimeStatus === 'error' ? 'Ошибка соединения' : 'Подключение...'}
+        </span>
+      </div>
+
+      {/* Кнопки управления */}
       <div className="absolute top-3 right-3 z-20 flex gap-2">
         <button
           onClick={toggleFullscreen}

@@ -5,9 +5,11 @@ import type { KonvaEventObject } from 'konva/lib/Node'
 import { useMapStore } from '@/lib/stores/mapStore'
 import type { MapToken, FogZone } from '@/lib/supabase/types'
 
-// Fixed logical coordinate space — all token positions and fog zones stored in these coords
 const LOGICAL_W = 1200
 const LOGICAL_H = 700
+
+const ZOOM_MIN = 0.25
+const ZOOM_MAX = 5
 
 interface Props {
   sessionId: string
@@ -20,8 +22,8 @@ interface Props {
 }
 
 interface TokenPopup { tokenId: string; x: number; y: number }
+interface PopupEdit { label: string; hpCurrent: string; hpMax: string }
 
-// Measures the container div and returns its size
 function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
   const [size, setSize] = useState({ w: LOGICAL_W, h: LOGICAL_H })
   useEffect(() => {
@@ -36,26 +38,52 @@ function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
   return size
 }
 
-export function MapCanvas({ sessionId, isMaster, currentUserId, broadcastTokenMove, broadcast, broadcastPing, pingLabel }: Props) {
-  const { tokens, mapState, fogState, updateToken, removeToken, setFogState, selectedTool, pings } = useMapStore()
+export function MapCanvas({
+  sessionId, isMaster, currentUserId, broadcastTokenMove, broadcast, broadcastPing, pingLabel
+}: Props) {
+  const {
+    tokens, mapState, fogState, updateToken, removeToken, setFogState,
+    selectedTool, pings, fogBrushSize, snapToGrid,
+  } = useMapStore()
 
   const containerRef = useRef<HTMLDivElement>(null)
   const { w: ctW, h: ctH } = useContainerSize(containerRef)
 
-  // Scale to fit logical space into container (maintain aspect ratio)
+  // CSS scale: fit logical space into container
   const scale = Math.min(ctW / LOGICAL_W, ctH / LOGICAL_H)
-  const stageW = Math.round(LOGICAL_W * scale)
-  const stageH = Math.round(LOGICAL_H * scale)
+  const scaleRef = useRef(scale)
+  useEffect(() => { scaleRef.current = scale }, [scale])
+
+  // Viewport: zoom level and pan offset (in stage canvas coords)
+  const [viewport, setViewport] = useState({ zoom: 1, panX: 0, panY: 0 })
+  const viewportRef = useRef(viewport)
+  useEffect(() => { viewportRef.current = viewport }, [viewport])
 
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
   const [videoCanvas, setVideoCanvas] = useState<HTMLCanvasElement | null>(null)
   const [tokenPopup, setTokenPopup] = useState<TokenPopup | null>(null)
+  const [popupEdit, setPopupEdit] = useState<PopupEdit>({ label: '', hpCurrent: '', hpMax: '' })
+
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const animRef = useRef<number>(0)
   const stageRef = useRef<import('konva/lib/Stage').Stage>(null)
   const fogCanvasRef = useRef<HTMLCanvasElement>(null)
   const isPainting = useRef(false)
-  const fogBrushSize = 80
+  const isPanning = useRef(false)
+  const lastPanPos = useRef({ x: 0, y: 0 })
+  const lastDragBroadcast = useRef(0)
+  const DRAG_BROADCAST_MS = 50 // ~20 fps
+
+  // Sync popup edit fields when popup opens
+  useEffect(() => {
+    if (!tokenPopup) return
+    const t = tokens.find(t => t.id === tokenPopup.tokenId)
+    if (t) setPopupEdit({
+      label: t.label,
+      hpCurrent: t.hp_current != null ? String(t.hp_current) : '',
+      hpMax: t.hp_max != null ? String(t.hp_max) : '',
+    })
+  }, [tokenPopup?.tokenId])
 
   // Background map loading
   useEffect(() => {
@@ -88,6 +116,64 @@ export function MapCanvas({ sessionId, isMaster, currentUserId, broadcastTokenMo
     return () => { cancelAnimationFrame(animRef.current); videoRef.current?.pause() }
   }, [mapState?.map_url, mapState?.map_type])
 
+  // Wheel zoom (non-passive to allow preventDefault)
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const rect = el.getBoundingClientRect()
+      // cursor in stage canvas coords
+      const cx = (e.clientX - rect.left) / scaleRef.current
+      const cy = (e.clientY - rect.top) / scaleRef.current
+      const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12
+      setViewport(prev => {
+        const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, prev.zoom * factor))
+        const lx = (cx - prev.panX) / prev.zoom
+        const ly = (cy - prev.panY) / prev.zoom
+        return { zoom: newZoom, panX: cx - lx * newZoom, panY: cy - ly * newZoom }
+      })
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
+
+  // Middle-mouse pan
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    const onMouseDown = (e: MouseEvent) => {
+      if (e.button !== 1) return
+      e.preventDefault()
+      isPanning.current = true
+      lastPanPos.current = { x: e.clientX, y: e.clientY }
+    }
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isPanning.current) return
+      const dx = (e.clientX - lastPanPos.current.x) / scaleRef.current
+      const dy = (e.clientY - lastPanPos.current.y) / scaleRef.current
+      lastPanPos.current = { x: e.clientX, y: e.clientY }
+      setViewport(prev => ({ ...prev, panX: prev.panX + dx, panY: prev.panY + dy }))
+    }
+    const onMouseUp = (e: MouseEvent) => {
+      if (e.button === 1) isPanning.current = false
+    }
+
+    el.addEventListener('mousedown', onMouseDown)
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    return () => {
+      el.removeEventListener('mousedown', onMouseDown)
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [])
+
+  function resetViewport() {
+    setViewport({ zoom: 1, panX: 0, panY: 0 })
+  }
+
   // Grid (logical coordinates)
   const gridLines: React.ReactNode[] = []
   if (mapState?.grid_type !== 'none') {
@@ -104,8 +190,28 @@ export function MapCanvas({ sessionId, isMaster, currentUserId, broadcastTokenMo
     return isMaster || (token.owner_type === 'player' && !!token.owner_id)
   }
 
-  function handleDragEnd(e: KonvaEventObject<DragEvent>, token: MapToken) {
+  function snapPosition(x: number, y: number): { x: number; y: number } {
+    if (!snapToGrid || mapState?.grid_type === 'none') return { x, y }
+    const gs = mapState?.grid_size ?? 50
+    return {
+      x: Math.round((x - gs / 2) / gs) * gs + gs / 2,
+      y: Math.round((y - gs / 2) / gs) * gs + gs / 2,
+    }
+  }
+
+  function handleDragMove(e: KonvaEventObject<DragEvent>, token: MapToken) {
+    const now = Date.now()
+    if (now - lastDragBroadcast.current < DRAG_BROADCAST_MS) return
+    lastDragBroadcast.current = now
     const { x, y } = e.target.position()
+    broadcastTokenMove(token.id, x, y)
+  }
+
+  function handleDragEnd(e: KonvaEventObject<DragEvent>, token: MapToken) {
+    let { x, y } = e.target.position()
+    const snapped = snapPosition(x, y)
+    x = snapped.x; y = snapped.y
+    e.target.position({ x, y })
     updateToken(token.id, { x, y })
     broadcastTokenMove(token.id, x, y)
     fetch(`/api/sessions/${sessionId}/tokens/${token.id}`, {
@@ -114,11 +220,12 @@ export function MapCanvas({ sessionId, isMaster, currentUserId, broadcastTokenMo
     })
   }
 
-  // Returns pointer position in LOGICAL coordinates
-  // (CSS scale on the inner div makes getBoundingClientRect return scaled size,
-  //  so Konva normalises correctly: x = (cx - rect.left) * stageWidth / rect.width = (cx - rect.left) / scale)
-  function getLogicalPos(e: KonvaEventObject<MouseEvent>) {
-    return e.target.getStage()?.getPointerPosition() ?? null
+  // Convert stage canvas coords → logical coords (accounts for zoom/pan)
+  function getLogicalPos(e: KonvaEventObject<MouseEvent>): { x: number; y: number } | null {
+    const raw = e.target.getStage()?.getPointerPosition()
+    if (!raw) return null
+    const { zoom, panX, panY } = viewportRef.current
+    return { x: (raw.x - panX) / zoom, y: (raw.y - panY) / zoom }
   }
 
   function handleTokenClick(e: KonvaEventObject<MouseEvent>, token: MapToken) {
@@ -137,6 +244,25 @@ export function MapCanvas({ sessionId, isMaster, currentUserId, broadcastTokenMo
     await fetch(`/api/sessions/${sessionId}/tokens/${tokenId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ width: newSize, height: newSize }),
+    })
+  }
+
+  async function saveTokenEdit(tokenId: string) {
+    const changes: Partial<MapToken> = {}
+    if (popupEdit.label.trim()) changes.label = popupEdit.label.trim()
+    if (popupEdit.hpMax !== '') {
+      const max = Math.max(1, Number(popupEdit.hpMax) || 1)
+      const cur = Math.min(Math.max(0, Number(popupEdit.hpCurrent) || 0), max)
+      changes.hp_max = max
+      changes.hp_current = cur
+      changes.show_hp = true
+    }
+    if (Object.keys(changes).length === 0) return
+    updateToken(tokenId, changes)
+    broadcast?.('token:patched', { id: tokenId, ...changes })
+    await fetch(`/api/sessions/${sessionId}/tokens/${tokenId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(changes),
     })
   }
 
@@ -167,7 +293,7 @@ export function MapCanvas({ sessionId, isMaster, currentUserId, broadcastTokenMo
       const updated = (fogState.revealed_zones ?? []).filter(z => Math.hypot(z.x - x, z.y - y) > fogBrushSize)
       setFogState({ ...fogState, revealed_zones: updated })
     }
-  }, [fogState, selectedTool, setFogState])
+  }, [fogState, selectedTool, setFogState, fogBrushSize])
 
   const handleStageMouseDown = useCallback((e: KonvaEventObject<MouseEvent>) => {
     if (selectedTool === 'select') { setTokenPopup(null); return }
@@ -199,7 +325,7 @@ export function MapCanvas({ sessionId, isMaster, currentUserId, broadcastTokenMo
     })
   }, [fogState, sessionId, broadcast])
 
-  // Draw fog on HTML canvas (reliable compositing, drawn in logical coords)
+  // Draw fog on HTML canvas in logical coords
   const visibleTokens = tokens.filter(t => isMaster || t.visible_to_players)
   const fogEnabled = fogState?.fog_enabled ?? false
   const revealedZones = fogState?.revealed_zones ?? []
@@ -240,19 +366,28 @@ export function MapCanvas({ sessionId, isMaster, currentUserId, broadcastTokenMo
     ctx.globalCompositeOperation = 'source-over'
   }, [fogEnabled, revealedZones, visibleTokens])
 
-  const cursorStyle = selectedTool === 'fog-reveal' ? 'crosshair' : selectedTool === 'fog-hide' ? 'cell' : selectedTool === 'ping' ? 'pointer' : 'default'
+  const { zoom, panX, panY } = viewport
+
+  // Cursor style
+  const cursorStyle = isPanning.current
+    ? 'grabbing'
+    : selectedTool === 'fog-reveal' ? 'crosshair'
+    : selectedTool === 'fog-hide' ? 'cell'
+    : selectedTool === 'ping' ? 'pointer'
+    : 'default'
+
+  // Token popup visual position (accounts for zoom/pan and CSS scale)
   const popupToken = tokenPopup ? tokens.find(t => t.id === tokenPopup.tokenId) : null
+  const popupVisualX = tokenPopup ? (tokenPopup.x * zoom + panX) * scale : 0
+  const popupVisualY = tokenPopup ? (tokenPopup.y * zoom + panY) * scale : 0
 
   return (
-    // Outer container — fills the parent (flex-1 in session view, or full screen in map window)
     <div ref={containerRef} style={{ width: '100%', height: '100%', background: '#000', position: 'relative', overflow: 'hidden', cursor: cursorStyle }}>
 
-      {/* Inner div — always LOGICAL_W x LOGICAL_H, CSS-scaled to fit container */}
+      {/* Inner div — LOGICAL_W × LOGICAL_H, CSS-scaled to fit container */}
       <div style={{
-        position: 'absolute',
-        top: 0, left: 0,
-        width: LOGICAL_W,
-        height: LOGICAL_H,
+        position: 'absolute', top: 0, left: 0,
+        width: LOGICAL_W, height: LOGICAL_H,
         transformOrigin: 'top left',
         transform: `scale(${scale})`,
       }}>
@@ -260,6 +395,8 @@ export function MapCanvas({ sessionId, isMaster, currentUserId, broadcastTokenMo
           ref={stageRef}
           width={LOGICAL_W}
           height={LOGICAL_H}
+          scaleX={zoom} scaleY={zoom}
+          x={panX} y={panY}
           onMouseDown={handleStageMouseDown}
           onMouseMove={handleStageMouseMove}
           onMouseUp={handleStageMouseUp}
@@ -277,6 +414,7 @@ export function MapCanvas({ sessionId, isMaster, currentUserId, broadcastTokenMo
             {visibleTokens.map(token => (
               <TokenNode key={token.id} token={token}
                 draggable={canDragToken(token)}
+                onDragMove={(e) => handleDragMove(e, token)}
                 onDragEnd={(e) => handleDragEnd(e, token)}
                 onClick={(e) => handleTokenClick(e, token)}
                 selected={tokenPopup?.tokenId === token.id}
@@ -294,7 +432,7 @@ export function MapCanvas({ sessionId, isMaster, currentUserId, broadcastTokenMo
           </Layer>
         </Stage>
 
-        {/* Fog HTML canvas overlay — drawn at logical resolution, same div as Stage */}
+        {/* Fog canvas — mirrors stage transform */}
         {fogEnabled && (
           <canvas
             ref={fogCanvasRef}
@@ -303,34 +441,103 @@ export function MapCanvas({ sessionId, isMaster, currentUserId, broadcastTokenMo
               width: LOGICAL_W, height: LOGICAL_H,
               pointerEvents: 'none',
               opacity: isMaster ? 0.65 : 1,
+              transformOrigin: '0 0',
+              transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
             }}
           />
         )}
       </div>
 
-      {/* Token popup — positioned in VISUAL coordinates (outside the scaled div) */}
+      {/* Zoom controls overlay (visual coords) */}
+      <div className="absolute bottom-3 right-3 flex flex-col gap-1 z-20">
+        <button
+          onClick={() => setViewport(prev => ({ ...prev, zoom: Math.min(ZOOM_MAX, prev.zoom * 1.25) }))}
+          className="w-7 h-7 bg-gray-800/80 hover:bg-gray-700 border border-gray-600 rounded text-white text-sm flex items-center justify-center"
+          title="Приблизить"
+        >+</button>
+        <button
+          onClick={() => setViewport(prev => ({ ...prev, zoom: Math.max(ZOOM_MIN, prev.zoom / 1.25) }))}
+          className="w-7 h-7 bg-gray-800/80 hover:bg-gray-700 border border-gray-600 rounded text-white text-sm flex items-center justify-center"
+          title="Отдалить"
+        >−</button>
+        <button
+          onClick={resetViewport}
+          className="w-7 h-7 bg-gray-800/80 hover:bg-gray-700 border border-gray-600 rounded text-white text-xs flex items-center justify-center"
+          title="Сбросить вид"
+        >⌂</button>
+      </div>
+
+      {/* Zoom level badge */}
+      {zoom !== 1 && (
+        <div className="absolute bottom-3 left-3 z-20 bg-gray-800/70 border border-gray-700 rounded px-1.5 py-0.5 text-xs text-gray-300">
+          {Math.round(zoom * 100)}%
+        </div>
+      )}
+
+      {/* Token popup — positioned in visual coords */}
       {isMaster && popupToken && tokenPopup && (
         <div
           className="absolute z-30 bg-gray-800 border border-gray-600 rounded-lg shadow-xl p-2 text-xs"
           style={{
-            left: Math.min(tokenPopup.x * scale + 10, ctW - 165),
-            top: Math.max(tokenPopup.y * scale - 90, 4),
+            left: Math.min(popupVisualX + 10, ctW - 190),
+            top: Math.max(popupVisualY - 10, 4),
+            width: 180,
           }}
         >
-          <div className="font-medium text-white mb-2 truncate max-w-36">{popupToken.label}</div>
+          {/* Name edit */}
+          <input
+            value={popupEdit.label}
+            onChange={e => setPopupEdit(prev => ({ ...prev, label: e.target.value }))}
+            className="w-full bg-gray-700 border border-gray-600 rounded px-1.5 py-1 text-white text-xs mb-2 focus:outline-none focus:border-purple-500"
+            placeholder="Имя токена"
+          />
+
+          {/* HP edit */}
+          <div className="flex items-center gap-1 mb-2">
+            <span className="text-gray-400 text-xs w-5">HP</span>
+            <input
+              type="number" min={0}
+              value={popupEdit.hpCurrent}
+              onChange={e => setPopupEdit(prev => ({ ...prev, hpCurrent: e.target.value }))}
+              className="w-14 bg-gray-700 border border-gray-600 rounded px-1 py-0.5 text-white text-xs text-center focus:outline-none focus:border-purple-500"
+              placeholder="тек"
+            />
+            <span className="text-gray-500">/</span>
+            <input
+              type="number" min={1}
+              value={popupEdit.hpMax}
+              onChange={e => setPopupEdit(prev => ({ ...prev, hpMax: e.target.value }))}
+              className="w-14 bg-gray-700 border border-gray-600 rounded px-1 py-0.5 text-white text-xs text-center focus:outline-none focus:border-purple-500"
+              placeholder="макс"
+            />
+          </div>
+
+          {/* Save */}
+          <button
+            onClick={() => saveTokenEdit(popupToken.id)}
+            className="w-full py-1 bg-purple-700 hover:bg-purple-600 text-white rounded mb-2 transition-colors"
+          >
+            Сохранить
+          </button>
+
+          {/* Resize */}
           <div className="flex items-center gap-1 mb-1.5">
-            <span className="text-gray-400 w-10">Размер</span>
+            <span className="text-gray-400 w-12">Размер</span>
             <button onClick={() => resizeToken(popupToken.id, -10)}
               className="w-6 h-6 bg-gray-700 hover:bg-gray-600 rounded text-white flex items-center justify-center">−</button>
             <span className="text-white w-8 text-center">{popupToken.width ?? 50}</span>
             <button onClick={() => resizeToken(popupToken.id, 10)}
               className="w-6 h-6 bg-gray-700 hover:bg-gray-600 rounded text-white flex items-center justify-center">+</button>
           </div>
+
+          {/* Visibility */}
           <button onClick={() => toggleTokenVisibility(popupToken.id)}
             className="w-full flex items-center gap-1.5 py-1 px-2 rounded hover:bg-gray-700 text-gray-300 mb-1">
             <span>{popupToken.visible_to_players ? '👁' : '🙈'}</span>
             <span>{popupToken.visible_to_players ? 'Видим игрокам' : 'Скрыт'}</span>
           </button>
+
+          {/* Delete */}
           <button onClick={() => deleteToken(popupToken.id)}
             className="w-full flex items-center gap-1.5 py-1 px-2 rounded hover:bg-red-900 text-red-400">
             <span>🗑</span><span>Удалить</span>
@@ -341,8 +548,9 @@ export function MapCanvas({ sessionId, isMaster, currentUserId, broadcastTokenMo
   )
 }
 
-function TokenNode({ token, draggable, onDragEnd, onClick, selected }: {
+function TokenNode({ token, draggable, onDragMove, onDragEnd, onClick, selected }: {
   token: MapToken; draggable: boolean; selected: boolean
+  onDragMove: (e: KonvaEventObject<DragEvent>) => void
   onDragEnd: (e: KonvaEventObject<DragEvent>) => void
   onClick: (e: KonvaEventObject<MouseEvent>) => void
 }) {
@@ -373,14 +581,14 @@ function TokenNode({ token, draggable, onDragEnd, onClick, selected }: {
       {img ? (
         <Group x={token.x - r} y={token.y - r}
           clipFunc={(ctx) => { ctx.arc(r, r, r, 0, Math.PI * 2) }}
-          draggable={draggable} onDragEnd={onDragEnd} onClick={onClick}>
+          draggable={draggable} onDragMove={onDragMove} onDragEnd={onDragEnd} onClick={onClick}>
           <KonvaImage image={img} width={size} height={size} />
         </Group>
       ) : (
         <Circle x={token.x} y={token.y} radius={r}
           fill={isPlayer ? '#1d4ed8' : '#7c3aed'}
           stroke={isPlayer ? '#93c5fd' : '#c4b5fd'} strokeWidth={2}
-          draggable={draggable} onDragEnd={onDragEnd} onClick={onClick}
+          draggable={draggable} onDragMove={onDragMove} onDragEnd={onDragEnd} onClick={onClick}
         />
       )}
       <Text x={token.x - r} y={token.y + r + 3} width={size}

@@ -58,7 +58,7 @@ const RARITY_COLORS: Record<string, string> = {
 export function MapMasterPanel({
   sessionId, bestiaryCreatures, characters, sessionCharacters, lootItems, spells, onClose, broadcast,
 }: Props) {
-  const { mapState, fogState, setMapState, setFogState, addToken, selectedTool, setSelectedTool } = useMapStore()
+  const { mapState, fogState, setMapState, setFogState, addToken, selectedTool, setSelectedTool, fogBrushSize, setFogBrushSize, snapToGrid, setSnapToGrid } = useMapStore()
   const { worldState, setWorldState } = useWorldStore()
   const [tab, setTab] = useState<Tab>('map')
 
@@ -398,6 +398,17 @@ export function MapMasterPanel({
                 Применить сетку
               </button>
             </div>
+
+            <div className="border-t border-gray-700 pt-3">
+              <div className="flex items-center justify-between bg-gray-800 rounded px-3 py-2">
+                <span className="text-sm text-gray-200">Привязка к сетке</span>
+                <button onClick={() => setSnapToGrid(!snapToGrid)}
+                  className={`relative w-10 h-6 rounded-full transition-colors ${snapToGrid ? 'bg-purple-600' : 'bg-gray-600'}`}>
+                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${snapToGrid ? 'translate-x-5' : 'translate-x-1'}`} />
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1 px-1">Токены прилипают к центрам клеток при перемещении</p>
+            </div>
           </>
         )}
 
@@ -456,6 +467,15 @@ export function MapMasterPanel({
                 className={`relative w-10 h-6 rounded-full transition-colors ${fogState?.fog_enabled ? 'bg-purple-600' : 'bg-gray-600'}`}>
                 <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${fogState?.fog_enabled ? 'translate-x-5' : 'translate-x-1'}`} />
               </button>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-gray-400 w-24">Кисть {fogBrushSize}px</label>
+                <input type="range" min={20} max={250} step={10} value={fogBrushSize}
+                  onChange={e => setFogBrushSize(Number(e.target.value))}
+                  className="flex-1 accent-purple-500" />
+              </div>
             </div>
 
             <div className="space-y-2">
