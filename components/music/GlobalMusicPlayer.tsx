@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
+import { usePathname } from 'next/navigation'
 import { useMusicStore } from '@/lib/stores/musicStore'
 import { getAudioManager } from '@/lib/utils/audio'
 
@@ -11,8 +12,12 @@ const MusicWidget = dynamic(
 
 // Сцены грузятся один раз при первом открытии
 export function GlobalMusicPlayer() {
+  const pathname = usePathname()
   const { currentScene, status, volume, setVolume } = useMusicStore()
   const [open, setOpen] = useState(false)
+
+  // На страницах сессии и карты — не показываем (там свой виджет)
+  if (pathname.startsWith('/session/') || pathname.startsWith('/session')) return null
   const [scenes, setScenes] = useState<Parameters<typeof MusicWidget>[0]['scenes']>([])
   const [loaded, setLoaded] = useState(false)
 
