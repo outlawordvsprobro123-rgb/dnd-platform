@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { BestiaryCreature } from '@/lib/supabase/types'
 import { crToString, formatModifier, getModifier, STAT_LABELS } from '@/lib/utils/dnd'
 
@@ -21,10 +21,56 @@ interface Props {
 
 export default function CreatureCard({ creature, onAddToCombat }: Props) {
   const [expanded, setExpanded] = useState(false)
+  const [imageUrl, setImageUrl] = useState(creature.image_url)
   const [imgError, setImgError] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [urlInput, setUrlInput] = useState('')
+  const [showUrlInput, setShowUrlInput] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const stats = creature.stats as Record<string, number>
   const typeIcon = TYPE_ICONS[creature.type] ?? '👾'
+
+  async function uploadFile(file: File) {
+    setUploading(true)
+    setUploadError('')
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch(`/api/bestiary/${creature.id}/image`, { method: 'POST', body: formData })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Ошибка загрузки')
+      setImageUrl(data.image_url)
+      setImgError(false)
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : 'Ошибка')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function saveUrl() {
+    if (!urlInput.trim()) return
+    setUploading(true)
+    setUploadError('')
+    try {
+      const res = await fetch(`/api/bestiary/${creature.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: urlInput.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Ошибка')
+      setImageUrl(urlInput.trim())
+      setImgError(false)
+      setUrlInput('')
+      setShowUrlInput(false)
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : 'Ошибка')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   return (
     <div style={{
@@ -46,9 +92,9 @@ export default function CreatureCard({ creature, onAddToCombat }: Props) {
           background: 'var(--bg-overlay)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          {creature.image_url && !imgError ? (
+          {imageUrl && !imgError ? (
             <img
-              src={creature.image_url}
+              src={imageUrl}
               alt={creature.name}
               onError={() => setImgError(true)}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -89,14 +135,89 @@ export default function CreatureCard({ creature, onAddToCombat }: Props) {
 
           {/* Изображение крупное + атрибуты */}
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-            {creature.image_url && !imgError && (
+            {/* Блок изображения с загрузкой */}
+            <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
               <div style={{
-                width: '8rem', height: '10rem', borderRadius: '.5rem', flexShrink: 0,
+                width: '8rem', height: '10rem', borderRadius: '.5rem',
                 overflow: 'hidden', border: '1px solid var(--border-gold)',
+                background: 'var(--bg-overlay)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative',
               }}>
-                <img src={creature.image_url} alt={creature.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {imageUrl && !imgError ? (
+                  <img src={imageUrl} alt={creature.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setImgError(true)} />
+                ) : (
+                  <span style={{ fontSize: '3rem', opacity: .3 }}>{typeIcon}</span>
+                )}
+                {uploading && (
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ color: 'var(--gold)', fontSize: '.7rem', fontFamily: "'Alegreya SC', serif" }}>...</span>
+                  </div>
+                )}
               </div>
-            )}
+
+              {/* Кнопки загрузки */}
+              <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f); e.target.value = '' }} />
+              <div style={{ display: 'flex', gap: '.3rem' }}>
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  title="Загрузить изображение"
+                  style={{
+                    flex: 1, background: 'var(--bg-overlay)', border: '1px solid var(--border)',
+                    borderRadius: '.3rem', color: 'var(--text-muted)', fontSize: '.6rem',
+                    padding: '.25rem', cursor: 'pointer', fontFamily: "'Alegreya SC', serif",
+                    opacity: uploading ? .5 : 1,
+                  }}
+                >
+                  ↑ Файл
+                </button>
+                <button
+                  onClick={() => setShowUrlInput(v => !v)}
+                  title="Указать URL"
+                  style={{
+                    flex: 1, background: showUrlInput ? 'rgba(139,105,20,.15)' : 'var(--bg-overlay)',
+                    border: `1px solid ${showUrlInput ? 'var(--border-gold)' : 'var(--border)'}`,
+                    borderRadius: '.3rem', color: showUrlInput ? 'var(--gold)' : 'var(--text-muted)',
+                    fontSize: '.6rem', padding: '.25rem', cursor: 'pointer', fontFamily: "'Alegreya SC', serif",
+                  }}
+                >
+                  URL
+                </button>
+              </div>
+
+              {/* URL ввод */}
+              {showUrlInput && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '.25rem', width: '8rem' }}>
+                  <input
+                    value={urlInput}
+                    onChange={e => setUrlInput(e.target.value)}
+                    placeholder="https://..."
+                    onKeyDown={e => e.key === 'Enter' && saveUrl()}
+                    style={{
+                      width: '100%', boxSizing: 'border-box',
+                      background: 'rgba(0,0,0,.35)', border: '1px solid var(--border)',
+                      borderRadius: '.3rem', padding: '.25rem .4rem',
+                      color: 'var(--text-primary)', fontSize: '.6rem', outline: 'none',
+                    }}
+                  />
+                  <button onClick={saveUrl} disabled={!urlInput.trim() || uploading}
+                    style={{
+                      background: 'rgba(139,105,20,.2)', border: '1px solid var(--border-gold)',
+                      borderRadius: '.3rem', color: 'var(--gold)', fontSize: '.6rem',
+                      padding: '.2rem', cursor: 'pointer', fontFamily: "'Alegreya SC', serif",
+                      opacity: !urlInput.trim() || uploading ? .5 : 1,
+                    }}>
+                    Сохранить
+                  </button>
+                </div>
+              )}
+
+              {uploadError && (
+                <p style={{ color: '#e07070', fontSize: '.6rem', fontFamily: "'Alegreya SC', serif", wordBreak: 'break-word', maxWidth: '8rem' }}>{uploadError}</p>
+              )}
+            </div>
 
             <div style={{ flex: 1 }}>
               {/* Атрибуты */}

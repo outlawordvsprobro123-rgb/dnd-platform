@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import type { Character, InventoryItem, CharacterSpell } from '@/lib/supabase/types'
+import type { Character, InventoryItem, CharacterSpell, SpellSlot } from '@/lib/supabase/types'
 import { HpTracker } from './HpTracker'
 import { InventoryCatalog } from './InventoryCatalog'
 import { SKILLS, STAT_LABELS, getProficiencyBonus, getModifier, formatModifier } from '@/lib/utils/dnd'
@@ -94,9 +94,10 @@ interface Props {
   character: Character
   inventory: InventoryItem[]
   spells: CharacterSpell[]
+  spellSlots: SpellSlot[]
 }
 
-export default function CharacterSheet({ character: initial, inventory: initialInventory, spells: initialSpells }: Props) {
+export default function CharacterSheet({ character: initial, inventory: initialInventory, spells: initialSpells, spellSlots: initialSpellSlots }: Props) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -108,6 +109,9 @@ export default function CharacterSheet({ character: initial, inventory: initialI
   const [saveMsg, setSaveMsg] = useState('')
   const [editMode, setEditMode] = useState(false)
   const [draft, setDraft] = useState(initial)
+  const [spellSlots, setSpellSlots] = useState<SpellSlot[]>(initialSpellSlots)
+  const [slotEditing, setSlotEditing] = useState<number | null>(null) // level being edited
+  const [newSlotTotal, setNewSlotTotal] = useState(1)
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null)
   const [invCategory, setInvCategory] = useState<InvCategory>('weapon')
   const [newItem, setNewItem] = useState({ name: '', quantity: 1, weight: 0, description: '', category: 'misc' as InvCategory })
@@ -205,6 +209,32 @@ export default function CharacterSheet({ character: initial, inventory: initialI
   async function removeSpell(spellId: string) {
     await fetch(`/api/characters/${char.id}/spells/${spellId}`, { method: 'DELETE' })
     setSpells(prev => prev.filter(s => s.id !== spellId))
+  }
+
+  // ── Spell Slots ─────────────────────────────────────────────────────────────
+
+  async function upsertSlot(level: number, total: number, used: number) {
+    const res = await fetch(`/api/characters/${char.id}/spell-slots`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ level, total, used }),
+    })
+    const data = await res.json()
+    if (res.ok && data.slot) {
+      setSpellSlots(prev => {
+        const exists = prev.find(s => s.level === level)
+        return exists ? prev.map(s => s.level === level ? data.slot : s) : [...prev, data.slot]
+      })
+    }
+  }
+
+  async function deleteSlot(level: number) {
+    await fetch(`/api/characters/${char.id}/spell-slots?level=${level}`, { method: 'DELETE' })
+    setSpellSlots(prev => prev.filter(s => s.level !== level))
+  }
+
+  async function toggleSlotUsed(slot: SpellSlot) {
+    const newUsed = slot.used < slot.total ? slot.used + 1 : 0
+    await upsertSlot(slot.level, slot.total, newUsed)
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -642,6 +672,100 @@ export default function CharacterSheet({ character: initial, inventory: initialI
         {/* ══ МАГИЯ ══ */}
         {activeTab === 'magic' && (
           <div>
+
+            {/* ── Ячейки заклинаний ── */}
+            <div style={{ ...S.card, marginBottom: '1.5rem' }}>
+              <div style={{ ...S.sectionTitle, justifyContent: 'space-between' }}>
+                <span>Ячейки заклинаний</span>
+                <button
+                  onClick={() => setSlotEditing(slotEditing !== null ? null : 1)}
+                  style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.55rem', letterSpacing: '.1em', color: 'var(--gold-dim)', background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  {slotEditing !== null ? '✓ Готово' : '+ Добавить'}
+                </button>
+              </div>
+
+              {spellSlots.length === 0 && slotEditing === null ? (
+                <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '.8rem' }}>
+                  Нет ячеек. Нажмите «+ Добавить» чтобы настроить.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
+                  {spellSlots.sort((a, b) => a.level - b.level).map(slot => (
+                    <div key={slot.level} style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
+                      <span style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.65rem', color: 'var(--gold-dim)', minWidth: '3.5rem' }}>
+                        {slot.level} уровень
+                      </span>
+                      <div style={{ display: 'flex', gap: '.3rem', flex: 1, flexWrap: 'wrap' }}>
+                        {Array.from({ length: slot.total }).map((_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => toggleSlotUsed(slot)}
+                            title={i < slot.used ? 'Ячейка использована' : 'Ячейка доступна'}
+                            style={{
+                              width: '1.1rem', height: '1.1rem',
+                              borderRadius: '50%',
+                              border: `1.5px solid ${i < slot.used ? 'var(--border)' : 'var(--gold)'}`,
+                              background: i < slot.used ? 'transparent' : 'rgba(139,105,20,.35)',
+                              cursor: 'pointer',
+                              transition: 'all .15s',
+                              padding: 0,
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <span style={{ fontFamily: 'monospace', fontSize: '.7rem', color: 'var(--text-muted)', minWidth: '2.5rem', textAlign: 'right' }}>
+                        {slot.total - slot.used}/{slot.total}
+                      </span>
+                      {slotEditing !== null && (
+                        <button onClick={() => deleteSlot(slot.level)} title="Удалить уровень"
+                          style={{ background: 'none', border: 'none', color: 'var(--border)', fontSize: '.85rem', cursor: 'pointer', transition: 'color .15s' }}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#e07070'}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--border)'}>✕</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Форма добавления нового уровня */}
+              {slotEditing !== null && (
+                <div style={{ marginTop: '.75rem', borderTop: '1px solid var(--border)', paddingTop: '.75rem', display: 'flex', gap: '.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={S.label}>Уровень:</span>
+                  <select
+                    value={slotEditing}
+                    onChange={e => setSlotEditing(parseInt(e.target.value))}
+                    style={{ ...S.select, width: '5rem' }}
+                  >
+                    {[1,2,3,4,5,6,7,8,9].filter(l => !spellSlots.find(s => s.level === l)).map(l => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                  <span style={S.label}>Ячеек:</span>
+                  <input
+                    type="number" min={1} max={20} value={newSlotTotal}
+                    onChange={e => setNewSlotTotal(Math.max(1, parseInt(e.target.value) || 1))}
+                    style={{ ...S.input, width: '4rem', textAlign: 'center' }}
+                  />
+                  <button
+                    onClick={() => {
+                      const available = [1,2,3,4,5,6,7,8,9].filter(l => !spellSlots.find(s => s.level === l))
+                      if (!available.length) return
+                      upsertSlot(slotEditing, newSlotTotal, 0)
+                      const next = available.find(l => l > slotEditing) ?? available[0] ?? null
+                      setSlotEditing(next)
+                      setNewSlotTotal(1)
+                    }}
+                    disabled={spellSlots.find(s => s.level === slotEditing) !== undefined}
+                    className="btn-fantasy btn-gold"
+                    style={{ fontSize: '.6rem', padding: '.3rem .7rem' }}
+                  >
+                    + Добавить
+                  </button>
+                </div>
+              )}
+            </div>
+
             {spells.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontFamily: "'Mookmania', 'Alegreya SC', serif", fontStyle: 'italic' }}>
                 <div style={{ fontSize: '2rem', marginBottom: '.75rem', opacity: .3 }}>✦</div>
