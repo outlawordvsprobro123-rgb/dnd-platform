@@ -85,14 +85,16 @@ export default function MapDisplay({
       )}
 
       {/* Индикатор realtime-соединения */}
-      <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 bg-black/60 border border-gray-700 rounded-full px-2.5 py-1 text-xs">
-        <span className={`w-2 h-2 rounded-full ${
-          realtimeStatus === 'connected' ? 'bg-green-400 animate-pulse' :
-          realtimeStatus === 'error' ? 'bg-red-400' : 'bg-yellow-400 animate-pulse'
+      <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 bg-black/70 border border-gray-700 rounded-full px-2.5 py-1 text-xs">
+        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+          realtimeStatus === 'connected' ? 'bg-green-400' :
+          realtimeStatus === 'polling' ? 'bg-orange-400' :
+          realtimeStatus === 'error' ? 'bg-red-400' : 'bg-yellow-400'
         }`} />
         <span className="text-gray-300">
-          {realtimeStatus === 'connected' ? 'Синхронизация' :
-           realtimeStatus === 'error' ? 'Ошибка соединения' : 'Подключение...'}
+          {realtimeStatus === 'connected' ? 'Live' :
+           realtimeStatus === 'polling' ? 'Polling (2s)' :
+           realtimeStatus === 'error' ? 'Ошибка' : 'Подключение...'}
         </span>
       </div>
 
