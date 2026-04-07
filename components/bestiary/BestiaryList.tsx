@@ -87,8 +87,14 @@ export default function BestiaryList({ creatures, onAddToCombat }: Props) {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
-          {filtered.map(c => (
-            <CreatureCard key={c.id} creature={c} onAddToCombat={onAddToCombat} />
+          {filtered.map((c, i) => (
+            <div
+              key={c.id}
+              className="animate-fade-up"
+              style={{ animationDelay: `${Math.min(i * 40, 500)}ms`, animationFillMode: 'both' }}
+            >
+              <CreatureCard creature={c} onAddToCombat={onAddToCombat} />
+            </div>
           ))}
         </div>
       )}

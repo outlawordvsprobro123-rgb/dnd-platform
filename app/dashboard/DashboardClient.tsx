@@ -53,30 +53,63 @@ export default function DashboardClient({ sessions, characters }: Props) {
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
       {/* Герой-баннер */}
       <div style={{
-        background: 'linear-gradient(180deg, rgba(139,21,0,.12) 0%, transparent 100%)',
+        background: 'linear-gradient(180deg, rgba(139,21,0,.14) 0%, rgba(139,105,20,.04) 60%, transparent 100%)',
         borderBottom: '1px solid #3d2a10',
-        padding: '2rem 2rem 1.5rem',
+        padding: '2.5rem 2rem 2rem',
         textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
-        <div style={{ color: '#6b4f1e', fontSize: '1rem', letterSpacing: '.4em', marginBottom: '.75rem' }}>✦ ✦ ✦</div>
-        <h1 style={{ fontFamily: "'Nodesto Cyrillic', 'Alegreya SC', serif", fontSize: '2.2rem', fontWeight: 900, color: '#c9a84c', letterSpacing: '.08em', marginBottom: '.5rem' }}>
+        {/* Фоновый глоу */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'radial-gradient(ellipse 60% 50% at 50% 100%, rgba(201,168,76,.06), transparent)',
+        }} />
+
+        <div
+          className="animate-fade-down delay-1"
+          style={{ color: 'var(--gold-dim)', fontSize: '1.1rem', letterSpacing: '.5em', marginBottom: '.85rem' }}
+        >
+          <span className="animate-twinkle" style={{ animationDelay: '0s' }}>✦</span>
+          {' '}
+          <span className="animate-twinkle" style={{ animationDelay: '.4s' }}>✦</span>
+          {' '}
+          <span className="animate-twinkle" style={{ animationDelay: '.8s' }}>✦</span>
+        </div>
+
+        <h1
+          className="animate-scale-in delay-2 title-glow"
+          style={{
+            fontFamily: "'Nodesto Cyrillic', 'Alegreya SC', serif",
+            fontSize: '2.6rem',
+            fontWeight: 900,
+            color: 'var(--gold)',
+            letterSpacing: '.1em',
+            marginBottom: '.5rem',
+          }}
+        >
           ВАРНТАЛ
         </h1>
-        <p style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.65rem', letterSpacing: '.35em', color: '#7a5c38', textTransform: 'uppercase' }}>
-          Между вздохами · D&D 5e Homebrew
+
+        <p
+          className="animate-fade-up delay-3"
+          style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.65rem', letterSpacing: '.35em', color: 'var(--text-muted)', textTransform: 'uppercase' }}
+        >
+          Между вздохами · D&amp;D 5e Homebrew
         </p>
-        <div className="divider-gold-short" style={{ marginTop: '1.25rem' }} />
+
+        <div className="divider-glow animate-fade-up delay-4" style={{ marginTop: '1.5rem', maxWidth: '200px', margin: '1.5rem auto 0' }} />
       </div>
 
       {/* Быстрые действия */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: '.75rem', padding: '1.25rem 2rem', borderBottom: '1px solid #3d2a10' }}>
-        <button className="btn-fantasy btn-crimson" onClick={() => setShowCreate(true)}>
+        <button className="btn-fantasy btn-crimson animate-fade-up delay-4 ripple-container" onClick={() => setShowCreate(true)}>
           ✦ Новая кампания
         </button>
-        <button className="btn-fantasy btn-ghost" onClick={() => setShowJoin(true)}>
+        <button className="btn-fantasy btn-ghost animate-fade-up delay-5 ripple-container" onClick={() => setShowJoin(true)}>
           ◈ Присоединиться
         </button>
-        <a href="/campaign/import" className="btn-fantasy btn-ghost" style={{ textDecoration: 'none' }}>
+        <a href="/campaign/import" className="btn-fantasy btn-ghost animate-fade-up delay-6 ripple-container" style={{ textDecoration: 'none' }}>
           ⬆ Импорт Варнтала
         </a>
       </div>
@@ -101,28 +134,25 @@ export default function DashboardClient({ sessions, characters }: Props) {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
-              {sessions.map(s => (
+              {sessions.map((s, i) => (
                 <div
                   key={s.id}
                   onClick={() => router.push(`/session/${s.code}`)}
-                  className="card"
+                  className="card card-interactive animate-fade-left"
                   style={{
                     padding: '1rem 1.25rem',
-                    cursor: 'pointer',
-                    borderColor: '#3d2a10',
-                    transition: 'all .15s',
+                    animationDelay: `${i * 70}ms`,
+                    animationFillMode: 'both',
                   }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#6b4f1e'; (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(139,105,20,.1)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#3d2a10'; (e.currentTarget as HTMLElement).style.boxShadow = 'none' }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                      <h3 style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.9rem', color: '#f4e8cc', marginBottom: '.3rem' }}>{s.name}</h3>
-                      <p style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.6rem', letterSpacing: '.15em', color: '#7a5c38' }}>
-                        КОД: <span style={{ color: '#c9a84c', fontFamily: 'monospace', letterSpacing: '.2em' }}>{s.code}</span>
+                      <h3 style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.9rem', color: 'var(--text-primary)', marginBottom: '.3rem' }}>{s.name}</h3>
+                      <p style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.6rem', letterSpacing: '.15em', color: 'var(--text-muted)' }}>
+                        КОД: <span style={{ color: 'var(--gold)', fontFamily: 'monospace', letterSpacing: '.2em' }}>{s.code}</span>
                       </p>
                     </div>
-                    <span style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.6rem', letterSpacing: '.1em', color: STATUS_COLOR[s.status] ?? '#7a5c38', textTransform: 'uppercase' }}>
+                    <span style={{ fontFamily: "'Alegreya SC', serif", fontSize: '.6rem', letterSpacing: '.1em', color: STATUS_COLOR[s.status] ?? 'var(--text-muted)', textTransform: 'uppercase' }}>
                       {STATUS_LABEL[s.status] ?? s.status}
                     </span>
                   </div>
@@ -154,14 +184,12 @@ export default function DashboardClient({ sessions, characters }: Props) {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
-              {characters.map(char => (
+              {characters.map((char, i) => (
                 <div
                   key={char.id}
                   onClick={() => router.push(`/character/${char.id}`)}
-                  className="card"
-                  style={{ padding: '1rem 1.25rem', cursor: 'pointer', borderColor: '#3d2a10', transition: 'all .15s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#6b4f1e'; (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(139,105,20,.1)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#3d2a10'; (e.currentTarget as HTMLElement).style.boxShadow = 'none' }}
+                  className="card card-interactive animate-fade-right"
+                  style={{ padding: '1rem 1.25rem', animationDelay: `${i * 70}ms`, animationFillMode: 'both' }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
@@ -194,7 +222,7 @@ export default function DashboardClient({ sessions, characters }: Props) {
       {/* Модал создания сессии */}
       {showCreate && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: 'rgba(0,0,0,.75)' }} onClick={() => { setShowCreate(false); setError('') }}>
-          <div className="w-full max-w-md fade-up" style={{ background: 'linear-gradient(160deg, #1e1508, #130d04)', border: '1px solid #6b4f1e', borderRadius: '.75rem', padding: '2rem', boxShadow: '0 0 40px rgba(0,0,0,.8)' }} onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-md panel-appear" style={{ background: 'linear-gradient(160deg, #1e1508, #130d04)', border: '1px solid #6b4f1e', borderRadius: '.75rem', padding: '2rem', boxShadow: '0 0 40px rgba(0,0,0,.8)' }} onClick={e => e.stopPropagation()}>
             <h3 style={{ fontFamily: "'Alegreya SC', serif", fontSize: '1rem', color: '#c9a84c', letterSpacing: '.08em', marginBottom: '1.25rem' }}>Новая кампания</h3>
             <input
               value={sessionName}
@@ -218,7 +246,7 @@ export default function DashboardClient({ sessions, characters }: Props) {
       {/* Модал присоединения */}
       {showJoin && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: 'rgba(0,0,0,.75)' }} onClick={() => { setShowJoin(false); setError(''); setJoinCharId('') }}>
-          <div className="w-full max-w-md fade-up" style={{ background: 'linear-gradient(160deg, #1e1508, #130d04)', border: '1px solid #6b4f1e', borderRadius: '.75rem', padding: '2rem', boxShadow: '0 0 40px rgba(0,0,0,.8)' }} onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-md panel-appear" style={{ background: 'linear-gradient(160deg, #1e1508, #130d04)', border: '1px solid #6b4f1e', borderRadius: '.75rem', padding: '2rem', boxShadow: '0 0 40px rgba(0,0,0,.8)' }} onClick={e => e.stopPropagation()}>
             <h3 style={{ fontFamily: "'Alegreya SC', serif", fontSize: '1rem', color: '#c9a84c', letterSpacing: '.08em', marginBottom: '1.25rem' }}>Присоединиться к сессии</h3>
             <input
               value={joinCode}

@@ -1,12 +1,5 @@
 @import "tailwindcss";
 
-/* ==========================================
-   САМОХОСТИРУЕМЫЕ ШРИФТЫ D&D
-   Скачать и положить в /public/fonts/:
-   - MookMan_.ttf        (Mookmania — основной текст)
-   - Nodesto Cyrillic.ttf (Nodesto Cyrillic — обложка/логотип)
-   - Volbera.ttf          (Volbera — буквицы)
-========================================== */
 @font-face {
   font-family: 'Mookmania';
   src: url('/fonts/MookMan_.ttf') format('truetype');
@@ -35,32 +28,190 @@
    FANTASY DESIGN TOKENS
 ========================================== */
 :root {
-  /* Фоны */
   --bg-base:        #0d0a07;
   --bg-surface:     #1a1209;
   --bg-elevated:    #221608;
   --bg-overlay:     #2a1c0d;
 
-  /* Золото */
   --gold:           #c9a84c;
   --gold-dim:       #8b6914;
   --gold-bright:    #e8c96a;
 
-  /* Красный / акцент */
   --crimson:        #8b1500;
   --crimson-bright: #c0392b;
   --crimson-glow:   rgba(139,21,0,.25);
 
-  /* Текст */
   --text-primary:   #f4e8cc;
   --text-secondary: #c9a884;
   --text-muted:     #7a5c38;
 
-  /* Рамки */
   --border:         #3d2a10;
   --border-gold:    #6b4f1e;
   --border-bright:  #8b6914;
 }
+
+/* ==========================================
+   KEYFRAMES
+========================================== */
+
+/* Ember / искры */
+@keyframes emberFloat {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: .85; }
+  40%  { opacity: .6; }
+  100% { transform: translateY(-100vh) translateX(var(--ember-drift, 40px)) scale(0.1); opacity: 0; }
+}
+
+/* Появление снизу */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Появление сверху */
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Появление слева */
+@keyframes fadeLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Появление справа */
+@keyframes fadeRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Масштаб из центра */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Упругое появление */
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(.8); }
+  70%  { transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Плавание */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-5px); }
+}
+
+/* Пульс золота */
+@keyframes goldPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(201,168,76,.15), 0 0 0px rgba(201,168,76,0); }
+  50%       { box-shadow: 0 0 20px rgba(201,168,76,.35), 0 0 40px rgba(201,168,76,.1); }
+}
+
+/* Свечение текста */
+@keyframes textGlow {
+  0%, 100% { text-shadow: 0 0 8px rgba(201,168,76,.3); }
+  50%       { text-shadow: 0 0 20px rgba(201,168,76,.7), 0 0 40px rgba(201,168,76,.3); }
+}
+
+/* Мерцание факела */
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  10%       { opacity: .9; }
+  20%       { opacity: 1; }
+  30%       { opacity: .85; }
+  50%       { opacity: 1; }
+  70%       { opacity: .92; }
+  80%       { opacity: 1; }
+  90%       { opacity: .88; }
+}
+
+/* Шиммер (блик) */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+/* Пульс границы */
+@keyframes borderPulse {
+  0%, 100% { border-color: var(--border-gold); }
+  50%       { border-color: var(--gold); }
+}
+
+/* Вращение руны */
+@keyframes runeRotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Мерцание звезды */
+@keyframes twinkle {
+  0%, 100% { opacity: .2; transform: scale(.8); }
+  50%       { opacity: .9; transform: scale(1.1); }
+}
+
+/* Сканирующая линия */
+@keyframes scan {
+  0%   { top: -2px; opacity: .5; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* Пульс радиуса */
+@keyframes ripple {
+  0%   { transform: scale(0); opacity: .6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* Слайд шторки при переходе */
+@keyframes curtainIn {
+  from { opacity: 0; transform: translateY(12px) scale(.98); filter: blur(3px); }
+  to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes curtainOut {
+  from { opacity: 1; transform: translateY(0); filter: blur(0); }
+  to   { opacity: 0; transform: translateY(-8px); filter: blur(2px); }
+}
+
+/* Кровавая пульсация */
+@keyframes crimsonPulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(139,21,0,.2); }
+  50%       { box-shadow: 0 0 18px rgba(192,57,43,.5), 0 0 35px rgba(139,21,0,.2); }
+}
+
+/* ==========================================
+   УТИЛИТЫ АНИМАЦИИ
+========================================== */
+
+.animate-fade-up   { animation: fadeUp   .4s ease both; }
+.animate-fade-down { animation: fadeDown .35s ease both; }
+.animate-fade-left { animation: fadeLeft .35s ease both; }
+.animate-fade-right{ animation: fadeRight .35s ease both; }
+.animate-scale-in  { animation: scaleIn  .35s ease both; }
+.animate-pop       { animation: popIn    .35s cubic-bezier(.34,1.56,.64,1) both; }
+.animate-float     { animation: float 3.5s ease-in-out infinite; }
+.animate-flicker   { animation: flicker 2.5s ease-in-out infinite; }
+.animate-glow      { animation: goldPulse 2.5s ease-in-out infinite; }
+.animate-text-glow { animation: textGlow 3s ease-in-out infinite; }
+.animate-twinkle   { animation: twinkle 2s ease-in-out infinite; }
+.animate-rune      { animation: runeRotate 8s linear infinite; }
+.animate-shimmer   { animation: shimmer 2s linear infinite; }
+.animate-border-pulse { animation: borderPulse 2s ease-in-out infinite; }
+.animate-crimson   { animation: crimsonPulse 2s ease-in-out infinite; }
+
+/* Задержки stagger */
+.delay-0  { animation-delay: 0ms; }
+.delay-1  { animation-delay: 60ms; }
+.delay-2  { animation-delay: 120ms; }
+.delay-3  { animation-delay: 180ms; }
+.delay-4  { animation-delay: 240ms; }
+.delay-5  { animation-delay: 300ms; }
+.delay-6  { animation-delay: 360ms; }
+.delay-7  { animation-delay: 420ms; }
+.delay-8  { animation-delay: 480ms; }
+.delay-9  { animation-delay: 540ms; }
+.delay-10 { animation-delay: 600ms; }
 
 /* ==========================================
    БАЗОВЫЕ СТИЛИ
@@ -74,7 +225,6 @@ body {
   background-color: var(--bg-base);
   color: var(--text-primary);
   min-height: 100vh;
-  /* Тонкий пергаментный паттерн */
   background-image:
     repeating-linear-gradient(0deg,   transparent, transparent 60px, rgba(139,105,20,.03) 60px, rgba(139,105,20,.03) 61px),
     repeating-linear-gradient(90deg,  transparent, transparent 60px, rgba(139,105,20,.03) 60px, rgba(139,105,20,.03) 61px);
@@ -83,7 +233,6 @@ body {
 /* ==========================================
    ТИПОГРАФИКА
 ========================================== */
-/* Утилитарные классы шрифтов */
 .font-fantasy      { font-family: 'Nodesto Cyrillic', 'Alegreya SC', serif; }
 .font-cinzel       { font-family: 'Alegreya SC', serif; }
 .font-cinzel-sans  { font-family: 'Alegreya Sans SC', sans-serif; }
@@ -98,19 +247,18 @@ h1, h2, h3 { font-family: 'Alegreya SC', serif; letter-spacing: .04em; }
 ========================================== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-surface); }
-::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; transition: background .2s; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
 
 /* ==========================================
-   ПЕРЕИСПОЛЬЗУЕМЫЕ КЛАССЫ
+   КАРТОЧКИ
 ========================================== */
-
-/* Карточка */
 .card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: .75rem;
   position: relative;
+  transition: border-color .2s, box-shadow .2s, transform .2s;
 }
 .card::before {
   content: '';
@@ -125,7 +273,29 @@ h1, h2, h3 { font-family: 'Alegreya SC', serif; letter-spacing: .04em; }
   box-shadow: 0 0 20px rgba(139,105,20,.12), inset 0 1px 0 rgba(201,168,76,.08);
 }
 
-/* Разделитель */
+/* Интерактивная карточка */
+.card-interactive {
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.card-interactive:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 32px rgba(0,0,0,.55), 0 0 24px rgba(201,168,76,.12);
+  border-color: var(--border-gold);
+}
+.card-interactive:active {
+  transform: translateY(-1px);
+  transition-duration: .08s;
+}
+
+/* Карточка с пульсирующим свечением */
+.card-glow:hover {
+  box-shadow: 0 0 0 1px var(--border-gold), 0 0 30px rgba(201,168,76,.18);
+}
+
+/* ==========================================
+   РАЗДЕЛИТЕЛИ
+========================================== */
 .divider-gold {
   width: 100%;
   height: 1px;
@@ -138,7 +308,9 @@ h1, h2, h3 { font-family: 'Alegreya SC', serif; letter-spacing: .04em; }
   margin: 0 auto;
 }
 
-/* Орнамент */
+/* ==========================================
+   ОРНАМЕНТЫ
+========================================== */
 .ornament {
   font-family: 'Alegreya Sans SC', sans-serif;
   font-size: .7rem;
@@ -147,15 +319,11 @@ h1, h2, h3 { font-family: 'Alegreya SC', serif; letter-spacing: .04em; }
   text-align: center;
   user-select: none;
 }
-
-/* Золотой заголовок */
 .heading-fantasy {
   font-family: 'Nodesto Cyrillic', 'Alegreya SC', serif;
   color: var(--gold);
   letter-spacing: .06em;
 }
-
-/* Метка / eyebrow */
 .eyebrow {
   font-family: 'Alegreya Sans SC', sans-serif;
   font-size: .65rem;
@@ -164,7 +332,9 @@ h1, h2, h3 { font-family: 'Alegreya SC', serif; letter-spacing: .04em; }
   color: var(--gold-dim);
 }
 
-/* Инпут */
+/* ==========================================
+   ИНПУТ
+========================================== */
 .input-fantasy {
   background: var(--bg-overlay);
   border: 1px solid var(--border);
@@ -174,13 +344,19 @@ h1, h2, h3 { font-family: 'Alegreya SC', serif; letter-spacing: .04em; }
   font-family: 'Mookmania', 'Alegreya SC', serif;
   font-size: 1rem;
   outline: none;
-  transition: border-color .15s;
+  transition: border-color .2s, box-shadow .2s, background .2s;
   width: 100%;
 }
 .input-fantasy::placeholder { color: var(--text-muted); }
-.input-fantasy:focus { border-color: var(--gold-dim); box-shadow: 0 0 0 2px rgba(139,105,20,.2); }
+.input-fantasy:focus {
+  border-color: var(--gold-dim);
+  box-shadow: 0 0 0 2px rgba(139,105,20,.25), 0 0 12px rgba(201,168,76,.08);
+  background: rgba(42,28,13,.9);
+}
 
-/* Кнопка */
+/* ==========================================
+   КНОПКИ
+========================================== */
 .btn-fantasy {
   font-family: 'Alegreya Sans SC', sans-serif;
   font-size: .8rem;
@@ -190,11 +366,27 @@ h1, h2, h3 { font-family: 'Alegreya SC', serif; letter-spacing: .04em; }
   padding: .6rem 1.4rem;
   border: 1px solid;
   cursor: pointer;
-  transition: all .15s;
+  transition: all .2s ease;
   display: inline-flex;
   align-items: center;
   gap: .5rem;
+  position: relative;
+  overflow: hidden;
 }
+
+/* Шиммер блик на кнопке */
+.btn-fantasy::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.07), transparent);
+  transition: left .45s ease;
+  pointer-events: none;
+}
+.btn-fantasy:hover::after { left: 150%; }
+
 .btn-gold {
   background: linear-gradient(135deg, #3a2a08, #2a1c05);
   border-color: var(--gold-dim);
@@ -204,8 +396,14 @@ h1, h2, h3 { font-family: 'Alegreya SC', serif; letter-spacing: .04em; }
   background: linear-gradient(135deg, #4a3510, #3a2808);
   border-color: var(--gold);
   color: var(--gold-bright);
-  box-shadow: 0 0 12px rgba(201,168,76,.2);
+  box-shadow: 0 0 16px rgba(201,168,76,.25), 0 4px 12px rgba(0,0,0,.4);
+  transform: translateY(-1px);
 }
+.btn-gold:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 0 8px rgba(201,168,76,.15);
+}
+
 .btn-crimson {
   background: linear-gradient(135deg, #3a0800, #2a0500);
   border-color: var(--crimson);
@@ -214,20 +412,33 @@ h1, h2, h3 { font-family: 'Alegreya SC', serif; letter-spacing: .04em; }
 .btn-crimson:hover:not(:disabled) {
   background: linear-gradient(135deg, #5a1000, #3a0800);
   border-color: var(--crimson-bright);
-  box-shadow: 0 0 12px rgba(139,21,0,.3);
+  box-shadow: 0 0 16px rgba(139,21,0,.4), 0 4px 12px rgba(0,0,0,.4);
+  transform: translateY(-1px);
 }
+.btn-crimson:active:not(:disabled) {
+  transform: translateY(0);
+}
+
 .btn-ghost {
   background: transparent;
   border-color: var(--border);
   color: var(--text-secondary);
 }
 .btn-ghost:hover:not(:disabled) {
-  border-color: var(--border-bright);
-  color: var(--text-primary);
+  border-color: var(--border-gold);
+  color: var(--gold);
+  background: rgba(139,105,20,.07);
+  transform: translateY(-1px);
 }
+.btn-ghost:active:not(:disabled) {
+  transform: translateY(0);
+}
+
 .btn-fantasy:disabled { opacity: .4; cursor: not-allowed; }
 
-/* Бейдж редкости */
+/* ==========================================
+   БЕЙДЖИ РЕДКОСТИ
+========================================== */
 .rarity-common    { color: #aaa; border-color: #555; background: rgba(80,80,80,.2); }
 .rarity-uncommon  { color: #4ade80; border-color: #166534; background: rgba(22,101,52,.2); }
 .rarity-rare      { color: #60a5fa; border-color: #1d4ed8; background: rgba(29,78,216,.2); }
@@ -242,18 +453,127 @@ h1, h2, h3 { font-family: 'Alegreya SC', serif; letter-spacing: .04em; }
   padding: .15rem .5rem;
   border: 1px solid;
   border-radius: .25rem;
+  transition: all .2s;
 }
 
-/* Анимация появления */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: none; }
-}
-.fade-up { animation: fadeUp .25s ease both; }
+/* ==========================================
+   СПЕЦИАЛЬНЫЕ ЭФФЕКТЫ
+========================================== */
 
-/* Свечение золота */
-@keyframes goldPulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(201,168,76,.15); }
-  50%       { box-shadow: 0 0 18px rgba(201,168,76,.3); }
+/* Свечение заголовка */
+.title-glow {
+  animation: textGlow 4s ease-in-out infinite;
 }
-.glow-gold { animation: goldPulse 3s ease infinite; }
+
+/* Шиммер-фон (для скелетонов и выделений) */
+.shimmer-bg {
+  background: linear-gradient(90deg,
+    rgba(201,168,76,.0) 0%,
+    rgba(201,168,76,.08) 50%,
+    rgba(201,168,76,.0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Активный пункт меню — анимированная линия */
+.nav-active-line {
+  position: relative;
+}
+.nav-active-line::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: shimmer 2.5s linear infinite;
+  background-size: 200% 100%;
+}
+
+/* Ripple при клике */
+.ripple-container { position: relative; overflow: hidden; }
+.ripple-container::before {
+  content: '';
+  position: absolute;
+  inset: 50%;
+  width: 0; height: 0;
+  border-radius: 50%;
+  background: rgba(201,168,76,.15);
+  transform: scale(0);
+  transition: none;
+  pointer-events: none;
+}
+.ripple-container:active::before {
+  inset: 0;
+  width: auto; height: auto;
+  animation: ripple .4s ease-out forwards;
+}
+
+/* Звёздочки-орнаменты */
+.star-ornament {
+  display: inline-block;
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+/* Граница с анимацией */
+.border-animated {
+  animation: borderPulse 3s ease-in-out infinite;
+}
+
+/* Scan-line overlay на карточках */
+.card-scan {
+  position: relative;
+  overflow: hidden;
+}
+.card-scan::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,.2), transparent);
+  animation: scan 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Глоу-линия разделителя */
+.divider-glow {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+  position: relative;
+}
+.divider-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: shimmer 3s linear infinite;
+  background-size: 200% 100%;
+}
+
+/* ==========================================
+   HP BAR АНИМАЦИЯ
+========================================== */
+.hp-bar-fill {
+  transition: width .5s cubic-bezier(.4,0,.2,1);
+}
+
+/* ==========================================
+   FADE-UP ДЛЯ СПИСКОВ
+========================================== */
+.list-item-appear {
+  animation: fadeUp .4s ease both;
+}
+
+/* ==========================================
+   МОДАЛКИ / ПАНЕЛИ
+========================================== */
+.panel-appear  { animation: scaleIn .25s ease both; }
+.panel-slide   { animation: fadeDown .3s ease both; }
+
+/* ==========================================
+   TOOLTIP-ПОДСКАЗКИ
+========================================== */
+[title]:hover::after {
+  animation: fadeUp .2s ease both;
+}

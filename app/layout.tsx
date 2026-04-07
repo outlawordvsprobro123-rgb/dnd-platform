@@ -6,6 +6,14 @@ const GlobalMusicPlayer = dynamic(
   () => import('@/components/music/GlobalMusicPlayer').then(m => ({ default: m.GlobalMusicPlayer })),
   { ssr: false }
 )
+const EmberParticles = dynamic(
+  () => import('@/components/ui/EmberParticles').then(m => ({ default: m.EmberParticles })),
+  { ssr: false }
+)
+const PageTransition = dynamic(
+  () => import('@/components/ui/PageTransition').then(m => ({ default: m.PageTransition })),
+  { ssr: false }
+)
 
 export const metadata: Metadata = {
   title: 'Варнтал — Платформа приключений',
@@ -21,7 +29,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Alegreya+SC:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Alegreya+Sans+SC:wght@400;700&family=Alegreya+Sans:ital,wght@0,400;0,700;1,400&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
       </head>
       <body style={{ paddingBottom: '2.75rem' }}>
-        {children}
+        <EmberParticles count={22} />
+        <PageTransition>
+          {children}
+        </PageTransition>
         <GlobalMusicPlayer />
       </body>
     </html>
