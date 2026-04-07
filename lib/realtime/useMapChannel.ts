@@ -9,10 +9,11 @@ import type { MapToken, MapState, FogState, WorldState } from '@/lib/supabase/ty
 export type RealtimeStatus = 'connecting' | 'connected' | 'error'
 
 export function useMapChannel(sessionId: string) {
-  const broadcastChannelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null)
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null)
   const isSubscribed = useRef(false)
   const pendingQueue = useRef<Array<{ event: string; payload: unknown }>>([])
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>('connecting')
+  const [errorMsg, setErrorMsg] = useState<string>('')
 
   const { addToken, updateToken, removeToken, setMapState, setFogState } = useMapStore()
   const { setWorldState } = useWorldStore()
@@ -22,49 +23,53 @@ export function useMapChannel(sessionId: string) {
 
     const supabase = createClient()
 
-    // ── Канал 1: только broadcast (не требует RLS, работает всегда) ──────────
-    const broadcastChannel = supabase.channel(`map-broadcast:${sessionId}`)
+    // Один канал — только broadcast, без postgres_changes
+    const channel = supabase.channel(`map:${sessionId}`)
 
-    broadcastChannel.on('broadcast', { event: 'token:moved' }, ({ payload }) => {
+    channel.on('broadcast', { event: 'token:moved' }, ({ payload }) => {
       updateToken(payload.token_id as string, { x: payload.x as number, y: payload.y as number })
     })
-    broadcastChannel.on('broadcast', { event: 'token:added' }, ({ payload }) => {
+    channel.on('broadcast', { event: 'token:added' }, ({ payload }) => {
       addToken(payload as MapToken)
     })
-    broadcastChannel.on('broadcast', { event: 'token:patched' }, ({ payload }) => {
+    channel.on('broadcast', { event: 'token:patched' }, ({ payload }) => {
       updateToken(payload.id as string, payload as Partial<MapToken>)
     })
-    broadcastChannel.on('broadcast', { event: 'token:deleted' }, ({ payload }) => {
+    channel.on('broadcast', { event: 'token:deleted' }, ({ payload }) => {
       removeToken(payload.id as string)
     })
-    broadcastChannel.on('broadcast', { event: 'map:updated' }, ({ payload }) => {
+    channel.on('broadcast', { event: 'map:updated' }, ({ payload }) => {
       setMapState(payload as MapState)
     })
-    broadcastChannel.on('broadcast', { event: 'fog:updated' }, ({ payload }) => {
+    channel.on('broadcast', { event: 'fog:updated' }, ({ payload }) => {
       setFogState(payload as FogState)
     })
-    broadcastChannel.on('broadcast', { event: 'world:updated' }, ({ payload }) => {
+    channel.on('broadcast', { event: 'world:updated' }, ({ payload }) => {
       setWorldState(payload as WorldState)
     })
-    broadcastChannel.on('broadcast', { event: 'map:ping' }, ({ payload }) => {
+    channel.on('broadcast', { event: 'map:ping' }, ({ payload }) => {
       const { addPing, removePing } = useMapStore.getState()
       const id = payload.id as string
       addPing({ id, x: payload.x as number, y: payload.y as number, label: payload.label as string })
       setTimeout(() => removePing(id), 3000)
     })
 
-    broadcastChannel.subscribe((status) => {
+    channel.subscribe((status, err) => {
+      console.log('[Realtime] status:', status, 'err:', err)
       if (status === 'SUBSCRIBED') {
         isSubscribed.current = true
-        broadcastChannelRef.current = broadcastChannel
+        channelRef.current = channel
         setRealtimeStatus('connected')
-        // Flush queued messages
+        setErrorMsg('')
         const queued = pendingQueue.current.splice(0)
         for (const { event, payload } of queued) {
-          broadcastChannel.send({ type: 'broadcast', event, payload })
+          channel.send({ type: 'broadcast', event, payload })
         }
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         isSubscribed.current = false
+        const msg = err ? JSON.stringify(err) : status
+        setErrorMsg(msg)
+        console.error('[Realtime] FAILED:', msg)
         setRealtimeStatus('error')
       } else if (status === 'CLOSED') {
         isSubscribed.current = false
@@ -72,48 +77,16 @@ export function useMapChannel(sessionId: string) {
       }
     })
 
-    // ── Канал 2: postgres_changes (fallback, отдельно — не блокирует broadcast) ──
-    const dbChannel = supabase.channel(`map-db:${sessionId}`)
-
-    dbChannel.on('postgres_changes', {
-      event: 'INSERT', schema: 'public', table: 'map_tokens',
-      filter: `session_id=eq.${sessionId}`
-    }, ({ new: token }) => { addToken(token as MapToken) })
-
-    dbChannel.on('postgres_changes', {
-      event: 'UPDATE', schema: 'public', table: 'map_tokens',
-      filter: `session_id=eq.${sessionId}`
-    }, ({ new: token }) => { updateToken((token as MapToken).id, token as Partial<MapToken>) })
-
-    dbChannel.on('postgres_changes', {
-      event: 'DELETE', schema: 'public', table: 'map_tokens',
-      filter: `session_id=eq.${sessionId}`
-    }, ({ old }) => { removeToken((old as { id: string }).id) })
-
-    const onMapState = ({ new: ms }: { new: unknown }) => setMapState(ms as MapState)
-    dbChannel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'map_state', filter: `session_id=eq.${sessionId}` }, onMapState)
-    dbChannel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'map_state', filter: `session_id=eq.${sessionId}` }, onMapState)
-
-    const onFogState = ({ new: fs }: { new: unknown }) => setFogState(fs as FogState)
-    dbChannel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'fog_state', filter: `session_id=eq.${sessionId}` }, onFogState)
-    dbChannel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'fog_state', filter: `session_id=eq.${sessionId}` }, onFogState)
-
-    // Не отслеживаем статус DB-канала — ошибка там не критична
-    dbChannel.subscribe()
-
     return () => {
       isSubscribed.current = false
-      broadcastChannelRef.current = null
-      supabase.removeChannel(broadcastChannel)
-      supabase.removeChannel(dbChannel)
+      channelRef.current = null
+      supabase.removeChannel(channel)
     }
   }, [sessionId])
 
-  // ── Send API ─────────────────────────────────────────────────────────────
-
   const send = async (event: string, payload: unknown) => {
-    if (isSubscribed.current && broadcastChannelRef.current) {
-      broadcastChannelRef.current.send({ type: 'broadcast', event, payload })
+    if (isSubscribed.current && channelRef.current) {
+      channelRef.current.send({ type: 'broadcast', event, payload })
     } else {
       pendingQueue.current.push({ event, payload })
     }
@@ -130,5 +103,5 @@ export function useMapChannel(sessionId: string) {
     setTimeout(() => removePing(id), 3000)
   }
 
-  return { broadcastTokenMove, broadcastPing, send, realtimeStatus }
+  return { broadcastTokenMove, broadcastPing, send, realtimeStatus, errorMsg }
 }

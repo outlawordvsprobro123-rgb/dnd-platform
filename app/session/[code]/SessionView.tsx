@@ -96,7 +96,7 @@ export default function SessionView({
   }, [session.id])
 
   useSessionChannel(session.id)
-  const { broadcastTokenMove, broadcastPing, send, realtimeStatus } = useMapChannel(session.id)
+  const { broadcastTokenMove, broadcastPing, send, realtimeStatus, errorMsg } = useMapChannel(session.id)
   useCombatChannel(session.id)
   useMusicChannel(session.id)
 
@@ -183,13 +183,13 @@ export default function SessionView({
           />
 
           {/* Индикатор realtime */}
-          <div style={{ position: 'absolute', top: '0.75rem', left: '0.75rem', zIndex: 20, display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '9999px', padding: '0.2rem 0.6rem' }}>
+          <div style={{ position: 'absolute', top: '0.75rem', left: '0.75rem', zIndex: 20, display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '9999px', padding: '0.2rem 0.7rem', maxWidth: '20rem' }}>
             <span style={{
-              width: 6, height: 6, borderRadius: '50%',
+              width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
               background: realtimeStatus === 'connected' ? '#4ade80' : realtimeStatus === 'error' ? '#f87171' : '#facc15',
             }} />
-            <span style={{ fontSize: '0.6rem', color: '#9ca3af', fontFamily: 'monospace' }}>
-              {realtimeStatus === 'connected' ? 'live' : realtimeStatus === 'error' ? 'err' : '...'}
+            <span style={{ fontSize: '0.6rem', color: '#9ca3af', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {realtimeStatus === 'connected' ? 'live' : realtimeStatus === 'error' ? (errorMsg || 'err') : '...'}
             </span>
           </div>
 
