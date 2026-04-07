@@ -59,7 +59,9 @@ class AudioManager {
   }
 
   resume(): void {
-    this.currentSound?.play()
+    if (this.currentSound && !this.currentSound.playing()) {
+      this.currentSound.play()
+    }
   }
 
   stop(): void {
